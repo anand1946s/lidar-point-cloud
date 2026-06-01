@@ -15,7 +15,9 @@ bun315.ply
 ## 2. 3D-SIFT Inspired Keypoint Detection
 
 ### Objective
-The objective of this stage is to extract distinctive geometric feature points from each point cloud scan for subsequent matching and registration.
+To extract distinctive geometric feature points from each point cloud scan for subsequent matching and registration.
+
+Open3D doesnt have 3D-SIFT implementation. So instead i tried to make a simple version 
 
 
 ### Scale-Space Construction
@@ -50,33 +52,49 @@ Points with strong DoG responses correspond to regions exhibiting prominent loca
 
 For each point, neighboring points are obtained using a k-d tree. A point is selected as a keypoint if its DoG response is a local maximum or minimum among its neighbors and exceeds a predefined contrast threshold.
 
-The resulting keypoints represent salient geometric structures such as corners, protrusions, and high-curvature regions.
+The resulting keypoints represent geometric structures such as corners, protrusions, and high-curvature regions.
 
 ### Output
 The extracted keypoints are saved as .ply files and used for FPFH descriptor stage. Files are named as
 
 ```text
-bun000_keypoints.py
-bun045_keypoints.py
-bun090_keypoints.py
-bun180_keypoints.py
-bun270_keypoints.py
-bun315_keypoints.py
-chin_keypoints.py
-ear_back_keypoints.py
+bun000_keypoints.ply
+bun045_keypoints.ply
+bun090_keypoints.ply
+bun180_keypoints.ply
+bun270_keypoints.ply
+bun315_keypoints.ply
+chin_keypoints.ply
+ear_back_keypoints.ply
 ```
 
 ## 3. Feature Description and Correspondence Matching
 
 ### Objective
 
-The objective of this stage is to describe the extracted keypoints using local geometric features and establish correspondences between consecutive point cloud scans.
+This stage is to describe the extracted keypoints using local geometric features and establish correspondences between consecutive point cloud scans.
 
 ### Normal Estimation
 
 For each detected keypoint, surface normals are estimated using neighboring points obtained through a k-d tree search.
 
 These normals capture the local surface orientation and are required for feature descriptor computation.
+
+The local covariance matrix is computed as:
+
+$$
+C =
+\frac{1}{N}
+\sum_{i=1}^{N}
+(p_i-\bar{p})(p_i-\bar{p})^T
+$$
+
+where:
+
+- \(p_i\) = neighboring point
+- \(p̄\) = neighborhood centroid
+
+The eigenvector corresponding to the smallest eigenvalue of the covariance matrix is selected as the surface normal.
 
 ### FPFH Descriptor Computation
 
@@ -119,6 +137,15 @@ The generated correspondence matrices are saved and later used for point cloud r
 
 I didnt include the chin and ear_back files for simplicity.
 
+The following scan pairs were registered:
+```text
+- 000 ↔ 045
+- 045 ↔ 090
+- 090 ↔ 180
+- 180 ↔ 270
+- 270 ↔ 315
+```
+
 ```text
 Output files
 correspondence_000_045.npy
@@ -131,7 +158,7 @@ correspondence_270_315.npy
 
 ### Objective
 
-The objective of this stage is to estimate an initial rigid transformation between consecutive point cloud scans using the correspondences obtained from FPFH descriptor matching.
+This stage is to estimate an initial rigid transformation between consecutive point cloud scans using the correspondences obtained from FPFH.
 
 ### Correspondence Loading
 
@@ -168,7 +195,7 @@ The quality of the estimated transformation is evaluated using:
 
 For each scan pair, the estimated transformation matrix, fitness score, and RMSE value are stored in a JSON file.
 
-These transformations provide an initial alignment between scans and are subsequently used as input for ICP-based refinement.
+
 
 ```text
 Output files
@@ -182,7 +209,7 @@ transform_270_315.json
 
 ### Objective
 
-The objective of this stage is to refine the initial alignment obtained from the RANSAC registration stage and achieve a more accurate registration between consecutive point cloud scans.
+This stage is to refine the initial alignment obtained from the RANSAC registration stage and achieve a more accurate registration between consecutive point cloud scans.
 
 ### Initial Alignment
 
@@ -234,7 +261,6 @@ The registration quality is evaluated using:
 
 The refined transformation matrix, fitness score, and RMSE value are stored for each scan pair.
 
-These refined transformations are subsequently used for multi-view alignment and surface reconstruction of the Stanford Bunny model.
 
 ```text
 Files
@@ -300,22 +326,37 @@ final_090_180.json
 final_180_270.json
 final_270_315.json
 ```
-## 7. Point Cloud Reconstruction
+## 7. Reconstruction
 
 ### Objective
 
-The objective of this stage is to reconstruct a complete 3D model of the Stanford Bunny by combining all registered point cloud scans into a common coordinate system.
+The objective is to reconstruct a complete 3D model of the Stanford Bunny by combining all registered point cloud scans into a common coordinate system.
 
 ### Transformation Accumulation
 
 The pairwise transformations obtained from the Robust ICP stage are combined to compute the cumulative transformation of each scan with respect to the reference scan (`bun000`).
 
-For example:
+The cumulative transformations are computed as:
 
 $$
-T_{090} = T_{000 \rightarrow 045} \cdot T_{045 \rightarrow 090}
+T_{045}=T_{000\rightarrow045}
 $$
 
+$$
+T_{090}=T_{045}\cdot T_{045\rightarrow090}
+$$
+
+$$
+T_{180}=T_{090}\cdot T_{090\rightarrow180}
+$$
+
+$$
+T_{270}=T_{180}\cdot T_{180\rightarrow270}
+$$
+
+$$
+T_{315}=T_{270}\cdot T_{270\rightarrow315}
+$$
 Similarly, cumulative transformations are computed for all remaining scans.
 
 ### Scan Alignment
@@ -372,10 +413,7 @@ reconstructed_bunny.ply
 
 ![Reconstructed Stanford Bunny](image.png)
 
-The reconstructed model is not perfect and needs to be improved
+## Limitations 
 
-
-
-
-
+Since Open3D doesnt have a 3DSIFT library, errors might have accumulated due to the imperfection of my custom implemented 3DSIFT. As a result slightly distorted reconstruction is obtained
 
