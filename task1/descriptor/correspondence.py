@@ -6,7 +6,7 @@ import os
 # CONFIG
 # =====================================================
 
-KEYPOINT_DIR = "keypoints/keypoint_outputs"
+DATA_DIR = "bunny/bunny/data"
 OUTPUT_DIR = "descriptor"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -84,15 +84,14 @@ def build_correspondence_matrix(fpfh_source, fpfh_target):
 def process_pair(source_id, target_id):
 
     source_path = os.path.join(
-        KEYPOINT_DIR,
-        f"bun{source_id}_keypoints.ply"
-    )
+    DATA_DIR,
+    f"bun{source_id}.ply"
+        )
 
     target_path = os.path.join(
-        KEYPOINT_DIR,
-        f"bun{target_id}_keypoints.ply"
-    )
-
+            DATA_DIR,
+            f"bun{target_id}.ply"
+        )   
     print("\n--------------------------------")
     print(f"Processing {source_id} -> {target_id}")
     print("--------------------------------")
@@ -104,13 +103,19 @@ def process_pair(source_id, target_id):
     target_cloud = o3d.io.read_point_cloud(
         target_path
     )
+    source_cloud = source_cloud.voxel_down_sample(
+        voxel_size=0.002
+    )
 
+    target_cloud = target_cloud.voxel_down_sample(
+        voxel_size=0.002
+    )
     print(
-        f"Source keypoints: {len(source_cloud.points)}"
+    f"Source points: {len(source_cloud.points)}"
     )
 
     print(
-        f"Target keypoints: {len(target_cloud.points)}"
+        f"Target points: {len(target_cloud.points)}"
     )
 
     print("Computing FPFH...")
