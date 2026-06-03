@@ -17,8 +17,8 @@ VOXEL_SIZE = 0.003
 # LOAD SCANS
 # =====================================================
 
-source = load_scan(DATA_DIR / "bun000.ply")
-target = load_scan(DATA_DIR / "bun045.ply")
+source = load_scan(DATA_DIR / "top2.ply")
+target = load_scan(DATA_DIR / "bun090.ply")
 
 print(f"Source points : {len(source.points)}")
 print(f"Target points : {len(target.points)}")
@@ -76,10 +76,10 @@ source_fgr.transform(
 source_fgr.paint_uniform_color([1, 0, 0])  # red
 target_down.paint_uniform_color([0, 1, 0])  # green
 
-o3d.visualization.draw_geometries(
-    [source_fgr, target_down],
-    window_name="After FGR"
-)
+# o3d.visualization.draw_geometries(
+#     [source_fgr, target_down],
+#     window_name="After FGR"
+# )
 
 # =====================================================
 # ICP
