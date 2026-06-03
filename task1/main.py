@@ -18,13 +18,13 @@ SCAN_FILES = [
     "bun000.ply",
     "bun045.ply",
     "bun090.ply",
-    #"bun180.ply",
+    "bun180.ply"
     #"bun270.ply",
     #"bun315.ply",
-     "top2.ply",
-     "top3.ply",
-     "chin.ply",
-     "ear_back.ply"
+    #"top2.ply",
+     #"top3.ply",
+     #"chin.ply",
+     #"ear_back.ply"
 ]
 
 # =====================================================

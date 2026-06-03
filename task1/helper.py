@@ -43,7 +43,6 @@ def register_and_merge(
 
     print("\n=== FGR ===")
     print("Fitness:", fgr_result.fitness)
-    print("RMSE:", fgr_result.inlier_rmse)
 
     # ---------------------------------
     # ICP
@@ -58,7 +57,6 @@ def register_and_merge(
 
     print("\n=== ICP ===")
     print("Fitness:", icp_result.fitness)
-    print("RMSE:", icp_result.inlier_rmse)
 
     # ---------------------------------
     # Apply final transform
