@@ -1,6 +1,6 @@
 import open3d as o3d
 
-from config import DATA_DIR
+from config import DATA_DIR,OUTPUT_DIR
 from utils.loader import load_scan
 
 from helper import (
@@ -18,13 +18,13 @@ SCAN_FILES = [
     "bun000.ply",
     "bun045.ply",
     "bun090.ply",
-    "bun180.ply"
-    #"bun270.ply",
-    #"bun315.ply",
-    #"top2.ply",
-     #"top3.ply",
-     #"chin.ply",
-     #"ear_back.ply"
+    # "bun180.ply",
+    # "bun270.ply",
+    "bun315.ply",
+    "top2.ply",
+    "top3.ply",
+    "chin.ply",
+    "ear_back.ply"    
 ]
 
 # =====================================================
@@ -80,3 +80,12 @@ o3d.visualization.draw_geometries(
     [merged],
     window_name="Reconstructed Bunny"
 )
+
+output_file = OUTPUT_DIR / "final.ply"
+
+o3d.io.write_point_cloud(
+    str(output_file),
+    merged
+)
+
+print(f"\nSaved: {output_file}")
