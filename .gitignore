@@ -1,0 +1,15 @@
+# virtual envs
+myenv/
+.venv/
+venv/
+
+# python
+__pycache__/
+*.pyc
+
+# vscode
+.vscode/
+
+# build folders
+build/
+cmake-build-*/
