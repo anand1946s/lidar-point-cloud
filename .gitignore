@@ -1,15 +1,71 @@
-# virtual envs
-myenv/
+# Virtual environments
 .venv/
 venv/
+env/
+myenv/
+.env/
 
-# python
+# Python caches and tooling
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
 
-# vscode
+# Local environment/config files
+.env
+.env.*
+!.env.example
+
+# Editors and OS files
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
-# build folders
+# CMake and native build output
 build/
 cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+install_manifest.txt
+
+# Project native build folders
+pcl_tools/**/build/
+source_codes/**/build/
+task1/build/
+
+# Compiled binaries and libraries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.ilk
+
+# Generated registration outputs
+task1/outputs/
+outputs/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
