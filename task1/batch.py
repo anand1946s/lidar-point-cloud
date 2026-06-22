@@ -7,10 +7,10 @@ import time
 
 
 PAIRS = [
-    ("bun000", "bun045"),
-    ("bun045", "bun090"),
-    ("bun270", "bun315"),
-    ("bun315", "bun000"),
+    ("dragonSideRight_0", "dragonSideRight_24"),
+    ("dragonSideRight_24", "dragonSideRight_48"),
+    ("dragonSideRight_48", "dragonSideRight_72"),
+    ("dragonSideRight_72", "dragonSideRight_96"),
 ]
 
 CONFIG_PATH = Path("task1/config.py")

@@ -3,18 +3,20 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-DATA_DIR = PROJECT_ROOT / "data"
-OUTPUT_DIR = PROJECT_ROOT / "outputs"
+DATA_DIR = PROJECT_ROOT / "dragon_side"
+OUTPUT_DIR = PROJECT_ROOT / "outputs_dragon"
 
-SOURCE_NAME = "bun315"
-TARGET_NAME = "bun000"
+SOURCE_NAME = "dragonSideRight_72"
+TARGET_NAME = "dragonSideRight_96"
+CONF_NAME = "dragonSideRight.conf"
+
 
 
 # Options: "NONE" (Whole Set), "ISS", "3DSIFT", "HARRIS3D", "FPFH", "SHOT"
-FEATURE_METHOD = "NONE"
+FEATURE_METHOD = "ISS"
 
 # Options: "ICP", "ROBUST_ICP", "FGR", "GO_ICP"
-REGISTRATION_METHOD = "GO_ICP"
+REGISTRATION_METHOD = "ICP"
 
 VISUALIZE = False
 SAVE_RESULTS = True

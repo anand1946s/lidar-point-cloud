@@ -45,7 +45,7 @@ def main():
     # -----------------------------
 
     poses = load_groundtruth(
-        str(DATA_DIR / "bun.conf")
+        str(DATA_DIR / CONF_NAME)
     )
 
     T_gt = relative_transform(
