@@ -1,14 +1,19 @@
 import subprocess
 import tempfile
 
+import sys
+
 import numpy as np
 import open3d as o3d
 
 from config import PROJECT_ROOT
 
+_harris_executable_name = "harris3d"
+if sys.platform == "win32":
+    _harris_executable_name += ".exe"
 
 HARRIS_EXECUTABLE = (
-    PROJECT_ROOT.parent / "pcl_tools" / "harris_3d" / "build" / "harris3d"
+    PROJECT_ROOT.parent / "pcl_tools" / "harris_3d" / "build" / _harris_executable_name
 )
 
 

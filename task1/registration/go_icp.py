@@ -1,6 +1,7 @@
 import os
 import tempfile
 import subprocess
+import copy
 import numpy as np
 import open3d as o3d
 from pathlib import Path
@@ -12,15 +13,15 @@ def write_goicp_cloud(pcd, filepath):
         f.write(f"{len(pts)}\n")
         np.savetxt(f, pts, fmt='%.6f')
 
-def run_go_icp(source, target, initial_transform, threshold, bin_path, mse_thresh=0.001, trim_fraction=0.0, dt_size=300):
+def run_go_icp(source, target, initial_transform, threshold, bin_path, mse_thresh=0.001, trim_fraction=0.0, dt_size=300, num_points=0):
     """
     Runs the compiled Go-ICP C++ executable via subprocess.
     """
     if not os.path.exists(bin_path):
         raise FileNotFoundError(f"Go-ICP executable not found at {bin_path}. Please compile it first.")
 
-    # Apply initial transform
-    source_tmp = source.transform(initial_transform)
+    # Apply initial transform using deepcopy to avoid mutating the original source
+    source_tmp = copy.deepcopy(source).transform(initial_transform)
 
     # Normalize point clouds to [-1, 1]^3 as required by Go-ICP README
     source_pts = np.asarray(source_tmp.points)
@@ -40,6 +41,15 @@ def run_go_icp(source, target, initial_transform, threshold, bin_path, mse_thres
     s_norm = o3d.geometry.PointCloud()
     s_norm.points = o3d.utility.Vector3dVector(s_centered * scale)
     
+    # Properly downsample/shuffle the source point cloud in Python to ensure 
+    # uniform random representation of the shape.
+    if num_points > 0 and len(s_norm.points) > num_points:
+        np.random.seed(42)  # For deterministic execution
+        indices = np.random.choice(len(s_norm.points), num_points, replace=False)
+        s_norm_pts = np.asarray(s_norm.points)[indices]
+        s_norm = o3d.geometry.PointCloud()
+        s_norm.points = o3d.utility.Vector3dVector(s_norm_pts)
+    
     t_norm = o3d.geometry.PointCloud()
     t_norm.points = o3d.utility.Vector3dVector(t_centered * scale)
 
@@ -54,16 +64,31 @@ def run_go_icp(source, target, initial_transform, threshold, bin_path, mse_thres
         write_goicp_cloud(s_norm, source_path) # Data
         write_goicp_cloud(t_norm, target_path) # Model
 
+        # Determine search space bounds. If initial transform is not identity,
+        # the clouds are already aligned, so we can restrict the search space
+        # to a small local neighborhood to speed up convergence by factors of millions.
+        is_identity = np.allclose(initial_transform, np.eye(4))
+        if not is_identity:
+            rot_min = -0.1
+            rot_width = 0.2
+            trans_min = -0.05
+            trans_width = 0.1
+        else:
+            rot_min = -3.1415926
+            rot_width = 6.2831853
+            trans_min = -0.5
+            trans_width = 1.0
+
         # Create Go-ICP config file
         config_content = f"""MSEThresh={mse_thresh}
-rotMinX=-3.1415926
-rotMinY=-3.1415926
-rotMinZ=-3.1415926
-rotWidth=6.2831853
-transMinX=-0.5
-transMinY=-0.5
-transMinZ=-0.5
-transWidth=1.0
+rotMinX={rot_min}
+rotMinY={rot_min}
+rotMinZ={rot_min}
+rotWidth={rot_width}
+transMinX={trans_min}
+transMinY={trans_min}
+transMinZ={trans_min}
+transWidth={trans_width}
 trimFraction={trim_fraction}
 distTransSize={dt_size}
 distTransExpandFactor=2.0
@@ -71,8 +96,8 @@ distTransExpandFactor=2.0
         with open(config_path, 'w') as f:
             f.write(config_content)
 
-        # Number of points to use (0 means all points)
-        nd_downsampled = 0 
+        # We already downsampled in Python, so tell Go-ICP to use all points in source_path (0 means all)
+        nd_downsampled = 0
 
         # Call the Go-ICP executable
         cmd = [
@@ -84,7 +109,7 @@ distTransExpandFactor=2.0
             output_path
         ]
         
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(cmd, check=True)
 
         # Read output transformation
         with open(output_path, 'r') as f:

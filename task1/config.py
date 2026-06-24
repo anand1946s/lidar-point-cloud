@@ -14,9 +14,9 @@ CONF_NAME = "dragonSideRight.conf"
 
 # Options: "NONE" (Whole Set), "ISS", "3DSIFT", "HARRIS3D", "FPFH", "SHOT"
 FEATURE_METHOD = "ISS"
-
+ 
 # Options: "ICP", "ROBUST_ICP", "FGR", "GO_ICP"
-REGISTRATION_METHOD = "ICP"
+REGISTRATION_METHOD = "GO_ICP"
 
 VISUALIZE = False
 SAVE_RESULTS = True
@@ -50,5 +50,6 @@ GO_ICP_BIN_PATH = (
 GO_ICP_MSE_THRESH = 0.005
 # Set to 0.0 to disable trimming. Trimming forces a costly sorting operation at EVERY iteration.
 # If your point clouds have decent overlap, 0.0 will be exponentially faster.
-GO_ICP_TRIM_FRACTION = 0.0
+GO_ICP_TRIM_FRACTION = 0.1
 GO_ICP_DT_SIZE = 150  # Default was 300. Decrease to speed up initialization, increase for better distance accuracy.
+GO_ICP_NUM_POINTS = 300  # Number of points to downsample for Go-ICP global search. 0 means all points.

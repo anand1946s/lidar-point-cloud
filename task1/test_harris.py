@@ -6,7 +6,7 @@ from preprocessing.harris3d import (
 )
 
 cloud = o3d.io.read_point_cloud(
-    str(DATA_DIR / "bun000.ply")
+    str(DATA_DIR / "dragonSideRight_72.ply")
 )
 
 print(cloud)

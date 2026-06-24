@@ -124,7 +124,8 @@ def main():
                 bin_path=GO_ICP_BIN_PATH,
                 mse_thresh=GO_ICP_MSE_THRESH,
                 trim_fraction=GO_ICP_TRIM_FRACTION,
-                dt_size=GO_ICP_DT_SIZE
+                dt_size=GO_ICP_DT_SIZE,
+                num_points=GO_ICP_NUM_POINTS
             )
 
         elif registration_method == "FGR":

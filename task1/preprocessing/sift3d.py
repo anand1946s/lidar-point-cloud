@@ -4,6 +4,8 @@ import tempfile
 import numpy as np
 import open3d as o3d
 
+import sys
+
 from config import (
     PROJECT_ROOT,
     SIFT3D_INITIAL_THRESHOLD,
@@ -14,9 +16,12 @@ from config import (
     SIFT3D_SCALES_PER_OCTAVE,
 )
 
+_sift3d_executable_name = "sift3d"
+if sys.platform == "win32":
+    _sift3d_executable_name += ".exe"
 
 SIFT3D_EXECUTABLE = (
-    PROJECT_ROOT.parent / "source_codes" / "sift3d" / "build" / "sift3d"
+    PROJECT_ROOT.parent / "source_codes" / "sift3d" / "build" / _sift3d_executable_name
 )
 
 

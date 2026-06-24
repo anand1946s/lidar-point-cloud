@@ -214,8 +214,31 @@ def prepare_registration_inputs(
             source_shot = extract_shot_keypoints(source)
             target_shot = extract_shot_keypoints(target)
 
-            pipeline_data["registration_source"] = source_shot
-            pipeline_data["registration_target"] = target_shot
+            try:
+                source_shot_clean, source_shot_features = (
+                    prepare_shot_registration_data(source, source_shot)
+                )
+                target_shot_clean, target_shot_features = (
+                    prepare_shot_registration_data(target, target_shot)
+                )
+
+                initial_result = get_initial_transform(
+                    source_shot_clean,
+                    target_shot_clean,
+                    source_shot_features,
+                    target_shot_features,
+                    voxel_size=0.005
+                )
+
+                pipeline_data["initial_transform"] = (
+                    initial_result.transformation
+                )
+                pipeline_data["registration_source"] = source_shot_clean
+                pipeline_data["registration_target"] = target_shot_clean
+            except Exception as e:
+                # Fallback if PCL SHOT calculation has issues
+                pipeline_data["registration_source"] = source_shot
+                pipeline_data["registration_target"] = target_shot
         
     else:
 
