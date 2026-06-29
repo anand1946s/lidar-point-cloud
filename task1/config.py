@@ -3,17 +3,17 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-DATA_DIR = PROJECT_ROOT / "dragon_side"
-OUTPUT_DIR = PROJECT_ROOT / "outputs_dragon"
+DATA_DIR = PROJECT_ROOT / "buddha" / "happy_side"
+OUTPUT_DIR = PROJECT_ROOT / "outputs_buddha"
 
-SOURCE_NAME = "dragonSideRight_72"
-TARGET_NAME = "dragonSideRight_96"
-CONF_NAME = "dragonSideRight.conf"
+SOURCE_NAME = "happySideRight_72"
+TARGET_NAME = "happySideRight_96"
+CONF_NAME = "happySideRight.conf"
 
 
 
 # Options: "NONE" (Whole Set), "ISS", "3DSIFT", "HARRIS3D", "FPFH", "SHOT"
-FEATURE_METHOD = "ISS"
+FEATURE_METHOD = "NONE"
  
 # Options: "ICP", "ROBUST_ICP", "FGR", "GO_ICP"
 REGISTRATION_METHOD = "GO_ICP"

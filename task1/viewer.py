@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 PLY_PATH = Path(
-    "task1/outputs/ROBUST_ICP_3DSIFT_bun000_bun045/ROBUST_ICP_3DSIFT_bun000_bun045.ply"
+    "task1/outputs_buddha/ICP_ISS_happySideRight_24_happySideRight_48/ICP_ISS_happySideRight_24_happySideRight_48.ply"
 )
 
 

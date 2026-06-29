@@ -7,11 +7,11 @@ import time
 
 
 PAIRS = [
-    ("dragonSideRight_0", "dragonSideRight_24"),
-    ("dragonSideRight_24", "dragonSideRight_48"),
-    ("dragonSideRight_48", "dragonSideRight_72"),
-    ("dragonSideRight_72", "dragonSideRight_96"),
-]
+    ("happySideRight_0", "happySideRight_24"),
+    ("happySideRight_24", "happySideRight_48"),
+    ("happySideRight_48", "happySideRight_72"),
+    ("happySideRight_72", "happySideRight_96"),
+    ]
 
 CONFIG_PATH = Path("task1/config.py")
 
