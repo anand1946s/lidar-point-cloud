@@ -6,8 +6,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_ROOT / "buddha" / "happy_side"
 OUTPUT_DIR = PROJECT_ROOT / "outputs_buddha"
 
-SOURCE_NAME = "happySideRight_72"
-TARGET_NAME = "happySideRight_96"
+SOURCE_NAME = "happySideRight_0"
+TARGET_NAME = "happySideRight_24"
 CONF_NAME = "happySideRight.conf"
 
 

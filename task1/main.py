@@ -170,9 +170,9 @@ def main():
     )
 
     print(
-        f"{metrics['fitness']:.6f},"
-        f"{metrics['rmse']:.6f},"
-        f"{rot_err:.6f},"
+        f"{metrics['fitness']:.6f}\t"
+        f"{metrics['rmse']:.6f}\t"
+        f"{rot_err:.6f}\t"
         f"{trans_err:.6f}"
     )
 

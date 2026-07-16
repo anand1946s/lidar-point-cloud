@@ -3,9 +3,9 @@ from pathlib import Path
 
 
 PLY_PATH = Path(
-    "task1/outputs_buddha/ICP_ISS_happySideRight_24_happySideRight_48/ICP_ISS_happySideRight_24_happySideRight_48.ply"
+    "task2/outputs_scannet/scene0027/ROBUST_ICP_SHOT_scene0027_01_vh_clean_scene0027_00_vh_clean/ROBUST_ICP_SHOT_scene0027_01_vh_clean_scene0027_00_vh_clean.ply"
 )
-
+#"task2/outputs_scannet/scene0024/ROBUST_ICP_SHOT/ROBUST_ICP_SHOT_scene0024_01_vh_clean_scene0024_00_vh_clean"
 
 def main():
 

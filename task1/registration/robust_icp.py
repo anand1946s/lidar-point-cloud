@@ -27,8 +27,8 @@ def run_robust_icp(
     loss_k=0.01,
 ):
 
-    _ensure_normals(source)
-    _ensure_normals(target)
+    _ensure_normals(source, radius=threshold * 2.0)
+    _ensure_normals(target, radius=threshold * 2.0)
 
     loss = (
         o3d.pipelines.registration

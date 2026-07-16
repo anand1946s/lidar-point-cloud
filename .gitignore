@@ -4,6 +4,9 @@ venv/
 env/
 myenv/
 .env/
+.venv_win/
+*env/
+*env_win/
 
 # Python caches and tooling
 __pycache__/
@@ -62,6 +65,27 @@ task1/build/
 # Generated registration outputs
 task1/outputs/
 outputs/
+outputs_*/
+**/outputs_*/
+stanford_outputs/
+
+# Heavy point cloud datasets
+*.ply
+*.pcd
+*.las
+*.laz
+Scannet/
+3dmatch/
+pavin/
+bunny/
+
+# Windows/WSL metadata and useless OS files
+*.Identifier
+*:Zone.Identifier
+
+# Checkpoints and temporary run results
+*checkpoint.json
+*_checkpoint.json
 
 # Logs and temporary files
 *.log

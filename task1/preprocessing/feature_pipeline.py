@@ -122,25 +122,26 @@ def prepare_registration_inputs(
             voxel_size=0.003
         )
 
-        pipeline_data["registration_source"] = (
-            source_iss
-        )
-
-        pipeline_data["registration_target"] = (
-            target_iss
-        )
-
-        pipeline_data["source_fpfh"] = (
-            source_fpfh
-        )
-
-        pipeline_data["target_fpfh"] = (
-            target_fpfh
-        )
-
         pipeline_data["initial_transform"] = (
             initial_result.transformation
         )
+
+        if registration_method == "FGR":
+            pipeline_data["registration_source"] = (
+                source_iss
+            )
+
+            pipeline_data["registration_target"] = (
+                target_iss
+            )
+
+            pipeline_data["source_fpfh"] = (
+                source_fpfh
+            )
+
+            pipeline_data["target_fpfh"] = (
+                target_fpfh
+            )
 
     # -------------------
     # HARRIS3D
@@ -233,12 +234,9 @@ def prepare_registration_inputs(
                 pipeline_data["initial_transform"] = (
                     initial_result.transformation
                 )
-                pipeline_data["registration_source"] = source_shot_clean
-                pipeline_data["registration_target"] = target_shot_clean
             except Exception as e:
                 # Fallback if PCL SHOT calculation has issues
-                pipeline_data["registration_source"] = source_shot
-                pipeline_data["registration_target"] = target_shot
+                pass
         
     else:
 

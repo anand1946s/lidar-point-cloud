@@ -60,7 +60,8 @@ for source_name, target_name in PAIRS:
         # Parse lines in reverse to find the metrics output, ignoring trailing print statements
         for line in reversed(output.strip().split("\n")):
             try:
-                fitness, rmse, rot, trans = map(float, line.split(","))
+                delimiter = "\t" if "\t" in line else ","
+                fitness, rmse, rot, trans = map(float, line.split(delimiter))
                 fitness_vals.append(fitness)
                 rmse_vals.append(rmse)
                 rot_vals.append(rot)
@@ -106,9 +107,9 @@ avg_trans = (
 print("\nAVERAGE")
 
 print(
-    f"{avg_fitness:.6f},"
-    f"{avg_rmse:.6f},"
-    f"{avg_rot:.6f},"
+    f"{avg_fitness:.6f}\t"
+    f"{avg_rmse:.6f}\t"
+    f"{avg_rot:.6f}\t"
     f"{avg_trans:.6f}"
 )
 
