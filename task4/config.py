@@ -6,7 +6,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 SCENE_NAME = "3DMatch"
 DATA_DIR = PROJECT_ROOT.parent / "3dmatch"
-OUTPUT_DIR = PROJECT_ROOT / "outputs_3dmatch"
+OUTPUT_DIR = PROJECT_ROOT / "output1_new"
+
+# To run on the first 3DMatch dataset instead, use:
+#   SCENE_NAME = "3DMatch"
+#   DATA_DIR = PROJECT_ROOT.parent / "3dmatch"
+#   OUTPUT_DIR = PROJECT_ROOT / "output1_new"
 
 SOURCE_NAME = "cloud_bin_4"
 TARGET_NAME = "cloud_bin_5"
@@ -16,7 +21,7 @@ TARGET_NAME = "cloud_bin_5"
 VOXEL_SIZE = 0.05
 
 # Options: "NONE" (Whole Set), "ISS", "3DSIFT", "HARRIS3D", "FPFH", "SHOT", "MULTI_SCALE" (or "C2F")
-FEATURE_METHOD = "ISS"
+FEATURE_METHOD = "FPFH"
 
 # Options: "ICP", "ROBUST_ICP", "FGR", "GO_ICP"
 REGISTRATION_METHOD = "ICP"

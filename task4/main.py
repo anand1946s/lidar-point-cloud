@@ -23,7 +23,7 @@ from task1.registration.fgr import run_fgr
 from task1.registration.robust_icp import (
     run_robust_icp
 )
-from task1.registration.go_icp import run_go_icp
+from go_icp_helper import run_go_icp_task4
 
 
 def load_scan(scan_name):
@@ -136,7 +136,7 @@ def main():
             )
             
         elif registration_method == "GO_ICP":
-            result = run_go_icp(
+            result = run_go_icp_task4(
                 registration_source,
                 registration_target,
                 initial_transform,
@@ -221,18 +221,24 @@ def main():
             metrics_to_save
         )
 
-        # Save downsampled aligned source cloud to save space
+        # Save downsampled aligned source cloud (compact, for metrics)
         aligned_source = copy.deepcopy(source)
-        aligned_source.transform(
-            result.transformation
+        aligned_source.transform(result.transformation)
+
+        # Save full-resolution aligned source cloud (for viewer)
+        aligned_full = copy.deepcopy(source_raw)
+        aligned_full.transform(result.transformation)
+
+        # Write downsampled aligned source cloud
+        o3d.io.write_point_cloud(
+            str(output_dir / f"{run_name}.ply"),
+            aligned_source
         )
 
+        # Write full-resolution aligned source cloud
         o3d.io.write_point_cloud(
-            str(
-                output_dir /
-                f"{run_name}.ply"
-            ),
-            aligned_source
+            str(output_dir / f"{run_name}_full.ply"),
+            aligned_full
         )
 
     # -----------------------------

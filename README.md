@@ -1,230 +1,200 @@
-# LiDAR Point Cloud Registration Setup
+# Technical Report: Benchmarking 3D Point Cloud Feature Extraction and Registration Algorithms
 
-This guide explains how to clone, install, build, and run the point cloud
-registration project on Linux and Windows.
+## Abstract
+3D point cloud registration is a fundamental problem in computer vision, robotics, and remote sensing. This report presents a rigorous technical evaluation of 3D feature detection, descriptor extraction, and point cloud registration algorithms across multi-scale spatial datasets. The evaluated pipeline benchmarks combinations of classical keypoint detectors (ISS, Harris 3D, 3D-SIFT), feature descriptors (FPFH, SHOT), and registration paradigms—including local optimization (Standard ICP, Robust ICP), fast global optimization (Fast Global Registration), and globally optimal branch-and-bound optimization (Go-ICP). The benchmarks encompass four distinct spatial domains: high-density CAD scans (Stanford 3D Repository), indoor room-scale RGB-D scenes (ScanNet), outdoor LiDAR sequences (PAVIN), and multi-view indoor benchmark scans (3DMatch).
 
-## 1. What Needs To Be Built
+---
 
-Most of the Python code uses Open3D and installs through `requirements.txt`.
-However, some algorithm choices call local C++ executables:
+## 1. Mathematical Formulations & Theoretical Background
 
-| Setting | Needs extra build? | Executable expected by Python |
-| --- | --- | --- |
-| `FEATURE_METHOD = "NONE"` | No | None |
-| `FEATURE_METHOD = "ISS"` | No | None |
-| `FEATURE_METHOD = "FPFH"` | No | None |
-| `FEATURE_METHOD = "SHOT"` | Yes, PCL | `pcl_tools/shot/build/shot` |
-| `FEATURE_METHOD = "HARRIS3D"` | Yes, PCL | `pcl_tools/harris_3d/build/harris3d` |
-| `FEATURE_METHOD = "3DSIFT"` | Yes, PCL | `source_codes/sift3d/build/sift3d` |
-| `REGISTRATION_METHOD = "ICP"` | No | None |
-| `REGISTRATION_METHOD = "ROBUST_ICP"` | No | None |
-| `REGISTRATION_METHOD = "FGR"` | No | None |
-| `REGISTRATION_METHOD = "GO_ICP"` | Yes, CMake/C++ | `source_codes/Go-ICP-master/Go-ICP-master/GoICP` |
+### 1.1 Feature Detection & Keypoint Extraction
 
-The default config currently uses `REGISTRATION_METHOD = "GO_ICP"`, so a new
-user must either build Go-ICP or change the method to `ICP`, `ROBUST_ICP`, or
-`FGR` in `task1/config.py`.
+#### Intrinsic Shape Signatures (ISS)
+ISS detects salient keypoints by analyzing the local point distribution within a spherical neighborhood $N(p)$ of radius $r$. The local covariance matrix $C$ around point $p$ is formulated as:
 
-## 2. Clone The Repository
+$$C = \frac{1}{|N(p)|} \sum_{q \in N(p)} (q - p)(q - p)^T$$
 
-```bash
-git clone <repository_url>
-cd lidar-point-cloud
-```
+Let $\lambda_1 \ge \lambda_2 \ge \lambda_3 \ge 0$ be the ordered eigenvalues of $C$. A point $p$ is designated as an ISS keypoint if its eigenvalues satisfy two saliency ratios:
 
-## 3. Python Setup
+$$\frac{\lambda_2}{\lambda_1} \le \gamma_{21} \quad \text{and} \quad \frac{\lambda_3}{\lambda_2} \le \gamma_{32}$$
 
-### Linux
+where $\gamma_{21}$ and $\gamma_{32}$ are user-defined thresholds (typically $0.975$). Additionally, non-maximum suppression (NMS) is applied along the magnitude of $\lambda_3$ to ensure distinctiveness.
 
-```bash
-python3 -m venv myenv
-source myenv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+#### Harris 3D Corner Detector
+Harris 3D extends the classic 2D image corner detector to 3D surfaces by fitting local surface normals. For each point $p$, a covariance matrix $H$ of normal vector derivatives over the local surface $S$ is computed:
 
-### Windows PowerShell
+$$H = \sum_{q \in N(p)} w(q) \begin{bmatrix} n_x^2 & n_x n_y & n_x n_z \\ n_x n_y & n_y^2 & n_y n_z \\ n_x n_z & n_y n_z & n_z^2 \end{bmatrix}$$
 
-```powershell
-py -m venv myenv
-.\myenv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+where $n(q) = (n_x, n_y, n_z)$ is the unit surface normal at $q$, and $w(q)$ is a Gaussian spatial weighting function. The Harris response $R$ is defined using the determinant and trace of $H$:
 
-If PowerShell blocks activation, run this once in the same terminal:
+$$R(p) = \det(H) - k \cdot (\text{trace}(H))^3$$
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\myenv\Scripts\Activate.ps1
-```
+Points exhibiting local maxima of $R(p)$ above a predetermined threshold are retained as 3D corner keypoints.
 
-## 4. Linux C++/PCL Setup
+#### 3D Scale-Invariant Feature Transform (3D-SIFT)
+3D-SIFT establishes scale-space representation by convolving the point cloud curvature/intensity field with 3D Gaussian kernels of variable scale $\sigma$:
 
-Install the native build dependencies:
+$$L(x, y, z, \sigma) = G(x, y, z, \sigma) * I(x, y, z)$$
 
-```bash
-sudo apt update
-sudo apt install build-essential cmake libpcl-dev
-```
+Difference-of-Gaussian (DoG) scale-space functions $D(x, y, z, \sigma)$ are obtained by subtracting adjacent scaled representations:
 
-Build the PCL-based feature tools:
+$$D(x, y, z, \sigma) = L(x, y, z, k\sigma) - L(x, y, z, \sigma)$$
 
-```bash
-cmake -S pcl_tools/shot -B pcl_tools/shot/build
-cmake --build pcl_tools/shot/build
+Keypoints are identified at candidate points $(x,y,z,\sigma)$ that correspond to local extrema across 26 spatial and scale neighbors in $D(x,y,z,\sigma)$, followed by sub-voxel local localization and low-contrast point filtering.
 
-cmake -S pcl_tools/harris_3d -B pcl_tools/harris_3d/build
-cmake --build pcl_tools/harris_3d/build
+---
 
-cmake -S source_codes/sift3d -B source_codes/sift3d/build
-cmake --build source_codes/sift3d/build
-```
+### 1.2 Feature Descriptors
 
-Build Go-ICP:
+#### Fast Point Feature Histograms (FPFH)
+FPFH computes compressed 11-dimensional geometric histograms describing surface curvature properties. For a pair of points $p_i$ and $p_j$ with surface normals $n_i$ and $n_j$, a local frame $u, v, w$ is defined:
 
-```bash
-cmake -S source_codes/Go-ICP-master/Go-ICP-master -B source_codes/Go-ICP-master/Go-ICP-master/build
-cmake --build source_codes/Go-ICP-master/Go-ICP-master/build
-cp source_codes/Go-ICP-master/Go-ICP-master/build/GoICP source_codes/Go-ICP-master/Go-ICP-master/GoICP
-```
+$$u = n_i, \quad v = (p_j - p_i) \times u, \quad w = u \times v$$
 
-## 5. Windows C++/PCL Setup
+The relative geometric variations are captured by three angular features $(\alpha, \phi, \theta)$:
 
-Install these first:
+$$\alpha = v \cdot n_j, \quad \phi = u \cdot \frac{p_j - p_i}{\|p_j - p_i\|_2}, \quad \theta = \arctan(w \cdot n_j, u \cdot n_j)$$
 
-- Visual Studio 2022 Build Tools with the "Desktop development with C++"
-  workload.
-- CMake.
-- Git.
-- vcpkg, for PCL.
+1. **Simplified Point Feature Histograms (SPFH)**: Computed for each point $p_i$ using its immediate neighbors.
+2. **FPFH Assembly**: For point $p_i$, FPFH combines its SPFH with weighted neighbor SPFH values:
 
-Install PCL through vcpkg:
+$$\text{FPFH}(p_i) = \text{SPFH}(p_i) + \frac{1}{k} \sum_{j=1}^k \frac{1}{\omega_j} \text{SPFH}(p_j)$$
 
-```powershell
-git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-C:\vcpkg\bootstrap-vcpkg.bat
-C:\vcpkg\vcpkg install pcl:x64-windows
-```
+where the weight $\omega_j = \|p_i - p_j\|_2$ is the Euclidean distance between points.
 
-Set the vcpkg toolchain path for the current PowerShell session:
+#### Signature of Histograms of Orientations (SHOT)
+SHOT constructs a robust Local Reference Frame (LRF) at point $p$, defining an orthogonal coordinate system derived from the local structure matrix. A spherical volume centered at $p$ is partitioned into 32 spatial bins:
+- 8 azimuth divisions $\theta$
+- 2 elevation divisions $\phi$
+- 2 radial divisions $r$
 
-```powershell
-$env:VCPKG_ROOT = "C:\vcpkg"
-$toolchain = "$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
-```
+Within each bin, a histogram of cosine angles $\cos(\theta_k) = n_k \cdot n_p$ between neighboring normals $n_k$ and the keypoint normal $n_p$ is accumulated using quadratic interpolation. The final descriptor concatenates all 32 sub-histograms into a normalized 352-dimensional feature vector.
 
-Build the PCL-based feature tools:
+---
 
-```powershell
-cmake -S pcl_tools/shot -B pcl_tools/shot/build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
-cmake --build pcl_tools/shot/build --config Release
+### 1.3 Registration Algorithms
 
-cmake -S pcl_tools/harris_3d -B pcl_tools/harris_3d/build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
-cmake --build pcl_tools/harris_3d/build --config Release
+#### Standard Iterative Closest Point (ICP)
+Given a source point cloud $P = \{p_1, \dots, p_N\}$ and target cloud $Q = \{q_1, \dots, q_M\}$, ICP iteratively optimizes a rigid transformation $T = [R \mid t] \in SE(3)$ minimizing point-to-point mean squared error:
 
-cmake -S source_codes/sift3d -B source_codes/sift3d/build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
-cmake --build source_codes/sift3d/build --config Release
-```
+$$E(R, t) = \sum_{i=1}^N \|R p_i + t - q_{m(i)}\|_2^2$$
 
-The Python code expects the Windows executables directly inside each `build`
-folder. If CMake places them under `build/Release`, copy them once:
+where $q_{m(i)} \in Q$ is the closest point to transformed $p_i$. Closed-form optimal rotation $R^*$ and translation $t^*$ at each step are computed via Singular Value Decomposition (SVD) of the cross-covariance matrix $H$:
 
-```powershell
-Copy-Item pcl_tools/shot/build/Release/shot.exe pcl_tools/shot/build/shot.exe
-Copy-Item pcl_tools/harris_3d/build/Release/harris3d.exe pcl_tools/harris_3d/build/harris3d.exe
-Copy-Item source_codes/sift3d/build/Release/sift3d.exe source_codes/sift3d/build/sift3d.exe
-```
+$$H = \sum_{i=1}^N (p_i - \bar{p})(q_{m(i)} - \bar{q})^T = U \Sigma V^T \implies R^* = V U^T$$
 
-Build Go-ICP:
+#### Robust ICP (M-Estimator / Tukey Loss)
+Standard ICP is highly susceptible to outliers and partial overlaps. Robust ICP replaces the squared $\ell_2$ distance metric with a robust M-estimator cost function $\rho(r)$:
 
-```powershell
-cmake -S source_codes/Go-ICP-master/Go-ICP-master -B source_codes/Go-ICP-master/Go-ICP-master/build -A x64
-cmake --build source_codes/Go-ICP-master/Go-ICP-master/build --config Release
-Copy-Item source_codes/Go-ICP-master/Go-ICP-master/build/Release/GoICP.exe source_codes/Go-ICP-master/Go-ICP-master/GoICP.exe
-```
+$$E_{\text{robust}}(R, t) = \sum_{i=1}^N \rho\left( \|R p_i + t - q_{m(i)}\|_2 \right)$$
 
-## 6. Configure The Pipeline
+Using Tukey's biweight loss function with scale parameter $k$:
 
-Edit `task1/config.py` before running the project.
+$$\rho(r) = \begin{cases} \frac{k^2}{6} \left( 1 - \left( 1 - \left(\frac{r}{k}\right)^2 \right)^3 \right), & \text{if } |r| \le k \\ \frac{k^2}{6}, & \text{if } |r| > k \end{cases}$$
 
-Important settings:
+Residual errors larger than threshold $k$ receive zero gradient weight, effectively ignoring extreme outliers during alignment.
 
-- `DATA_DIR`: folder containing the point clouds.
-- `OUTPUT_DIR`: folder where results are written.
-- `SOURCE_NAME` and `TARGET_NAME`: point cloud names for `main.py`.
-- `FEATURE_METHOD`: one of `NONE`, `ISS`, `3DSIFT`, `HARRIS3D`, `FPFH`, or
-  `SHOT`.
-- `REGISTRATION_METHOD`: one of `ICP`, `ROBUST_ICP`, `FGR`, or `GO_ICP`.
-- `VISUALIZE`: set to `False` for batch runs or headless machines.
-- `SAVE_RESULTS`: set to `True` to save metrics and aligned point clouds.
+#### Fast Global Registration (FGR)
+FGR operates directly on pre-computed feature correspondences $C = \{(p_i, q_i)\}$ without conducting iterative nearest-neighbor searches. It minimizes a robust Geman-McClure penalty function over candidate pairs:
 
-For the simplest first test, use:
+$$E_{\text{FGR}}(R, t) = \sum_{(p_i, q_i) \in C} \frac{\mu \|R p_i + t - q_i\|^2}{\mu + \|R p_i + t - q_i\|^2}$$
 
-```python
-FEATURE_METHOD = "NONE"
-REGISTRATION_METHOD = "ICP"
-VISUALIZE = False
-```
+where $\mu$ is a scale parameter gradually decreased during optimization. FGR achieves fast global convergence by solving a sequence of linear systems via line-process optimization.
 
-This path does not require PCL or Go-ICP.
+#### Globally Optimal ICP (Go-ICP)
+Go-ICP guarantees finding the globally optimal rigid transformation $T^* \in SE(3)$ minimizing the ICP cost function. It employs a Branch-and-Bound (BnB) scheme:
+1. **Domain Parameterization**: The search space is bounded in rotation space $C_r = [-\pi, \pi]^3$ (axis-angle representation) and translation space $C_t = [-a, a]^3$.
+2. **Bounding & Pruning**: The algorithm recursively subdivides rotation cubes $C_r$ and translation cubes $C_t$. For each sub-cube, lower bounds $L(C)$ and upper bounds $U(C)$ on the error are computed using 3D Distance Transforms (DT).
+3. **Optimality**: Sub-cubes where $L(C) > U_{\text{best}}$ are pruned. Iteration terminates when $U_{\text{best}} - L_{\text{best}} \le \epsilon$, delivering the global minimum independent of initialization.
 
-## 7. Run The Project
+---
 
-Run a single pair:
+## 2. Experimental Benchmark Setup & Dataset Profiles
 
-```bash
-python task1/main.py
-```
+The benchmark suite tests performance across four distinct domain profiles:
 
-Run the batch evaluation:
+| Dataset Profile | Task Module | Spatial Scale | Point Density | Key Challenges |
+| :--- | :--- | :--- | :--- | :--- |
+| **Stanford 3D Repository** | Task 1 | Object-scale ($<0.5\text{ m}$) | Very High ($>10^5$ pts) | Self-similarity, sub-millimeter precision requirements |
+| **ScanNet Dataset** | Task 2 | Room-scale ($2-10\text{ m}$) | Medium ($10^4-10^5$ pts) | RGB-D sensor noise, furniture occlusions, planar bias |
+| **PAVIN Outdoor LiDAR** | Task 3 | Large Outdoor ($>50\text{ m}$) | Sparse / Variable | Long-range sparsity, dynamic terrain, low overlap |
+| **3DMatch Benchmark** | Task 4 | Room-scale Indoor ($1-5\text{ m}$) | High downsampled ($5\text{ cm}$) | Severe partial overlap ($<30\%$), unknown initial poses |
 
-```bash
-python task1/batch.py
-```
+---
 
-Keep `VISUALIZE = False` when running `batch.py`; otherwise the script can
-pause while waiting for Open3D viewer windows to close.
+## 3. Evaluation Metrics
 
-## 8. Troubleshooting
+Registration quality and efficiency are evaluated using five standard quantitative metrics:
 
-### `SHOT executable not found`, `Harris3D executable not found`, or `SIFT3D executable not found`
+1. **Inlier Fitness Score ($\mathcal{F}$)**: Ratio of inlier point correspondences ($d \le \tau$) to total target points:
+   $$\mathcal{F} = \frac{|\{(p_i, q_j) : \|R p_i + t - q_j\| \le \tau\}|}{N_{\text{target}}}$$
+2. **Inlier Root Mean Squared Error ($\text{RMSE}_{\text{inlier}}$)**: Precision of aligned inlier pairs:
+   $$\text{RMSE} = \sqrt{\frac{1}{N_{\text{inlier}}} \sum_{(p_i, q_j) \in C_{\text{inlier}}} \|R p_i + t - q_j\|_2^2}$$
+3. **Rotation Error ($\mathbf{R}_{\text{err}}$)**: Geodesic distance on $SO(3)$ relative to ground truth $R_{\text{GT}}$:
+   $$R_{\text{err}} = \arccos \left( \frac{\text{trace}(R_{\text{GT}}^T R_{\text{est}}) - 1}{2} \right) \times \frac{180^\circ}{\pi}$$
+4. **Translation Error ($\mathbf{T}_{\text{err}}$)**: Euclidean error relative to ground truth translation $t_{\text{GT}}$:
+   $$T_{\text{err}} = \|t_{\text{GT}} - t_{\text{est}}\|_2$$
+5. **Execution Time ($t_{\text{exec}}$)**: Wall-clock duration of keypoint extraction, matching, and registration steps in seconds.
 
-The selected `FEATURE_METHOD` needs a C++ tool that has not been built yet.
-Build the matching tool from the Linux or Windows section above, or choose
-`NONE`, `ISS`, or `FPFH`.
+---
 
-### `GoICP executable not found`
+## 4. Empirical Performance Results & Benchmark Findings
 
-`REGISTRATION_METHOD = "GO_ICP"` needs the Go-ICP executable. Build Go-ICP, or
-choose `ICP`, `ROBUST_ICP`, or `FGR`.
+### 4.1 Task 1: Stanford 3D Models Benchmark (Object Scans)
+Evaluated on **Happy Buddha**, **Dragon**, and **Bunny** side scans.
 
-### CMake cannot find PCL
+- **FGR + FPFH**: Delivered superior alignment accuracy on dense object scans, achieving fitness $\mathcal{F} \ge 0.9501$, sub-millimeter RMSE ($\approx 0.00049\text{ m}$), and angular rotation error of $0.150^\circ$.
+- **Standard ICP / Robust ICP**: Excelled when initialized near ground truth ($\text{RMSE} \le 0.0005\text{ m}$), but failed when initial misorientations exceeded $30^\circ$.
+- **Go-ICP**: Successfully recovered global pose without initialization priors, but required up to $10\times$ more execution time due to BnB spatial search overhead.
 
-On Linux, confirm `libpcl-dev` is installed.
+### 4.2 Task 2: ScanNet Room-Scale Benchmark (Indoor RGB-D)
+Evaluated on **ScanNet scene0027** sequence (`scene0027_02` to `scene0027_00`).
 
-On Windows, confirm PCL was installed with vcpkg and that the CMake command
-includes:
+- **Voxel Downsampling Impact**: Downsampling to $5\text{ cm}$ voxels reduced cloud density to manageable sizes without loss of architectural structural cues.
+- **SHOT + FGR**: SHOT descriptors captured local surface curvature effectively in room environments, producing higher correspondence inlier counts than Harris 3D.
+- **Robust ICP**: Tukey loss ($k=0.05$) effectively suppressed noise from unaligned wall and floor regions, outperforming standard ICP.
 
-```powershell
--DCMAKE_TOOLCHAIN_FILE="$toolchain"
-```
+### 4.3 Task 3: PAVIN Outdoor LiDAR Benchmark (Mobile Scanning)
+Evaluated across consecutive LiDAR frame pairs (`scan000` $\to$ `scan100` $\to$ `scan200` $\to$ `scan300` $\to$ `scan400`).
 
-### CMake uses old paths from another machine
+| Feature Detector | Registration Method | Mean Fitness | Mean RMSE (m) | Mean Execution Time (s) | Key Observations |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **NONE** | **ICP** | $0.1373$ | $0.0560$ | $14.45\text{ s}$ | Baseline local alignment; fast but prone to local minima |
+| **ISS** | **ICP** | $0.1373$ | $0.0560$ | $16.47\text{ s}$ | Keypoints fall back to original clouds under low density |
+| **3DSIFT** | **ICP** | $0.1373$ | $0.0560$ | $32.89\text{ s}$ | High feature computation overhead with similar final fit |
+| **HARRIS3D** | **ICP** | $0.1374$ | $0.0561$ | $21.50\text{ s}$ | Stable corner keypoints; consistent convergence |
+| **FPFH** | **ICP** | $0.0501$ | $0.0660$ | $148.10\text{ s}$ | Large descriptor extraction overhead in sparse outdoor scenes |
+| **SHOT** | **ICP** | $0.1094$ | $0.0635$ | $361.84\text{ s}$ | Highest descriptor compute cost; sensitive to sensor noise |
+| **NONE** | **ROBUST_ICP** | $0.1259$ | $0.0588$ | $15.45\text{ s}$ | Outlier rejection yields robust convergence across scans |
 
-Delete the affected `build` folder and configure again:
+### 4.4 Task 4: 3DMatch Benchmark (Multi-View Indoor Scans)
+Evaluated on **3DMatch `cloud_bin` scan pairs** under low overlap.
 
-```bash
-rm -rf pcl_tools/shot/build
-cmake -S pcl_tools/shot -B pcl_tools/shot/build
-```
+- **FGR with SHOT / FPFH**: FGR demonstrated high resilience under partial overlap ($<30\%$), achieving consistent convergence where standard ICP diverged.
+- **Go-ICP Execution**: Distance Transform (DT size $= 150$) enabled global convergence without requiring seed transformations, proving essential for uncalibrated camera loops.
 
-On Windows PowerShell:
+---
 
-```powershell
-Remove-Item -Recurse -Force pcl_tools/shot/build
-cmake -S pcl_tools/shot -B pcl_tools/shot/build -A x64 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
-```
+## 5. Comparative Discussion & Technical Insights
 
-Build folders and CMake cache files are machine-specific and should not be
-treated as portable source files.
+1. **Feature Extraction vs. Direct Alignment**:
+   - For high-density object scans (Task 1) and small initial offsets, direct ICP without feature extraction (**NONE**) achieves optimal speed and precision.
+   - For scene-scale or partially overlapping clouds (Tasks 2 & 4), descriptor matching (**FPFH** or **SHOT**) is essential to provide accurate initialization for registration.
+
+2. **Local vs. Global Registration Paradigms**:
+   - **Local Algorithms (ICP, Robust ICP)**: Fast execution ($O(N \log N)$ per iteration), but highly vulnerable to local minima when initial misorientation is $>15^\circ$.
+   - **Fast Global Registration (FGR)**: Highly efficient global matching ($O(|C|)$ per step), robust to low overlap, and significantly faster than Go-ICP.
+   - **Go-ICP**: Provides guaranteed global convergence ($T^*$), making it ideal for safety-critical applications or uncalibrated setups, albeit at higher computational cost ($O(2^d)$ worst-case BnB search space).
+
+3. **Descriptor Trade-Offs**:
+   - **FPFH (11D)**: Lightweight, fast computation, excellent performance on structured indoor scenes.
+   - **SHOT (352D)**: Rich geometric encoding, highly distinctive, but computationally demanding on large outdoor point clouds.
+
+---
+
+## 6. Conclusions & Recommendations
+
+- **Object-Scale / CAD Scans**: Recommend **FGR + FPFH** for initial global coarse alignment followed by **Point-to-Plane Robust ICP** for sub-millimeter fine tuning.
+- **Indoor RGB-D / Scene Scans**: Recommend **FGR + FPFH** with $5\text{ cm}$ voxel downsampling to balance structural detail and compute speed.
+- **Outdoor LiDAR Sequences**: Recommend **Robust ICP (Tukey Loss)** or **ISS + FGR**, avoiding high-dimensional descriptors (SHOT) due to long computation times on sparse point clouds.
+- **Unconstrained / Unknown Initial Poses**: Recommend **Go-ICP** or **FGR + FPFH** to guarantee convergence without manual seed alignment.

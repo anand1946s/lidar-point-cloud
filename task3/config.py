@@ -5,7 +5,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 SCENE_NAME = "PAVIN"
 DATA_DIR = PROJECT_ROOT.parent / "pavin" / "PAVIN-20260709T123119Z-2-001" / "PAVIN"
-OUTPUT_DIR = PROJECT_ROOT / "outputs_pavin"
+OUTPUT_DIR = PROJECT_ROOT / "output1_new"
 
 SOURCE_NAME = "scan300"
 TARGET_NAME = "scan400"
