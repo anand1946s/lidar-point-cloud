@@ -1,0 +1,13 @@
+{
+  "fitness": 0.21237144738841887,
+  "rmse": 0.036525740153012895,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "ScanNet",
+  "source_id": "scene0024_02_vh_clean",
+  "target_id": "scene0024_00_vh_clean",
+  "feature_method": "NONE",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.18182278737524699
+}

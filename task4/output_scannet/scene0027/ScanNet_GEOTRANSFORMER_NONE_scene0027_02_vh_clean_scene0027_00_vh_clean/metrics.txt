@@ -1,0 +1,11 @@
+fitness: 0.6974164283601223
+rmse: 0.027088853696623665
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: ScanNet
+source_id: scene0027_02_vh_clean
+target_id: scene0027_00_vh_clean
+feature_method: NONE
+registration_method: GEOTRANSFORMER
+before_registration_fitness: 0.13327088058376885

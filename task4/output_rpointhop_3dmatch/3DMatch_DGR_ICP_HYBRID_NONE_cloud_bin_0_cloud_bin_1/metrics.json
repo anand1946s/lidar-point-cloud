@@ -1,0 +1,13 @@
+{
+  "fitness": 0.2728494623655914,
+  "rmse": 0.032133400208143995,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "3DMatch",
+  "source_id": "cloud_bin_0",
+  "target_id": "cloud_bin_1",
+  "feature_method": "NONE",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.22446236559139784
+}

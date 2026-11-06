@@ -1,0 +1,11 @@
+fitness: 0.49140893470790376
+rmse: 0.033678278812321306
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: 3DMatch
+source_id: cloud_bin_3
+target_id: cloud_bin_4
+feature_method: HARRIS3D
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.31566028473244967

@@ -1,0 +1,13 @@
+{
+  "fitness": 0.15406976744186046,
+  "rmse": 0.010797560653411904,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "Dragon",
+  "source_id": "dragonStandRight_48",
+  "target_id": "dragonStandRight_72",
+  "feature_method": "NONE",
+  "registration_method": "GEOTRANSFORMER",
+  "before_registration_fitness": 0.5581395348837209
+}

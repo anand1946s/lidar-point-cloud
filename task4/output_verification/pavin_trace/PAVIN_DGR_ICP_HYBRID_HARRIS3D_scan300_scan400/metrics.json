@@ -1,0 +1,13 @@
+{
+  "fitness": 0.004613333333333333,
+  "rmse": 0.03782479197371575,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "PAVIN",
+  "source_id": "scan300",
+  "target_id": "scan400",
+  "feature_method": "HARRIS3D",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.004613333333333333
+}

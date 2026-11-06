@@ -1,0 +1,13 @@
+{
+  "fitness": 0.21672017782168437,
+  "rmse": 0.08920091080420169,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "PAVIN",
+  "source_id": "scan600",
+  "target_id": "scan700",
+  "feature_method": "FPFH",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.18718202025191405
+}

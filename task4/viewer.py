@@ -40,16 +40,29 @@ def parse_run_name(run_name):
     if match:
         prefix, source_name, target_name = match.groups()
         parts = prefix.split('_')
-        if len(parts) >= 2 and parts[0] == "GO" and parts[1] == "ICP":
-            registration_method = "GO_ICP"
-            feature_method = "_".join(parts[2:])
-        elif len(parts) >= 2 and parts[0] == "ROBUST" and parts[1] == "ICP":
-            registration_method = "ROBUST_ICP"
-            feature_method = "_".join(parts[2:])
-        else:
-            registration_method = parts[0]
-            feature_method = "_".join(parts[1:])
+        if len(parts) > 1 and parts[0].upper() in {"3DMATCH", "3DMATCH2", "SCANNET", "PAVIN", "BUNNY", "DRAGON", "BUDDHA"}:
+            parts = parts[1:]
 
+        prefix_str = "_".join(parts)
+        for compound_reg in [
+            "GEOTRANSFORMER_ICP_HYBRID",
+            "GEOTRANSFORMER",
+            "DGR_ICP_HYBRID",
+            "DGR_ROBUSTICP",
+            "DGR_ROBUST_ICP",
+            "RPOINTHOP_ICP_HYBRID",
+            "ROBUST_ICP",
+            "GO_ICP",
+            "DEEP_GLOBAL",
+            "RPOINTHOP",
+        ]:
+            if prefix_str.startswith(compound_reg):
+                registration_method = compound_reg
+                feature_method = prefix_str[len(compound_reg):].lstrip("_") or "NONE"
+                return registration_method, feature_method, source_name, target_name
+
+        registration_method = parts[0]
+        feature_method = "_".join(parts[1:]) or "NONE"
         return registration_method, feature_method, source_name, target_name
 
     return None, None, None, None

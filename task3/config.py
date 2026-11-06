@@ -5,7 +5,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 SCENE_NAME = "PAVIN"
 DATA_DIR = PROJECT_ROOT.parent / "pavin" / "PAVIN-20260709T123119Z-2-001" / "PAVIN"
-OUTPUT_DIR = PROJECT_ROOT / "output1_new"
+OUTPUT_DIR = PROJECT_ROOT / "outputs_pavin"
 
 SOURCE_NAME = "scan300"
 TARGET_NAME = "scan400"
@@ -15,7 +15,7 @@ VOXEL_SIZE = 0.05
 
 # Options: "NONE" (Whole Set), "ISS", "3DSIFT", "HARRIS3D", "FPFH", "SHOT", "MULTI_SCALE"
 FEATURE_METHOD = "SHOT"
- 
+
 # Options: "ICP", "ROBUST_ICP", "FGR", "GO_ICP"
 REGISTRATION_METHOD = "FGR"
 VISUALIZE = False

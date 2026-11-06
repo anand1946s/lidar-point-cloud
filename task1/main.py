@@ -147,6 +147,16 @@ def main():
                     target_fpfh
                 )
 
+        elif registration_method in {"GEOTRANSFORMER", "GEO_TRANSFORMER"}:
+            from registration.geotransformer import run_geotransformer
+            result = run_geotransformer(
+                registration_source,
+                registration_target,
+                initial_transform=initial_transform,
+                threshold=ICP_THRESHOLD,
+                auto_scale=True,
+            )
+
         else:
             raise ValueError(
                 f"Unsupported registration method: "

@@ -1,0 +1,13 @@
+{
+  "fitness": 0.1794983074385904,
+  "rmse": 0.08367145599433866,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "PAVIN",
+  "source_id": "scan300",
+  "target_id": "scan400",
+  "feature_method": "3DSIFT",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.1794983074385904
+}

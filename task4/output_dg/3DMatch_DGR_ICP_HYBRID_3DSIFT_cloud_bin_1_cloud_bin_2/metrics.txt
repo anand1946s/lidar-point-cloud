@@ -1,0 +1,11 @@
+fitness: 0.4756960830580462
+rmse: 0.033569894044498394
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: 3DMatch
+source_id: cloud_bin_1
+target_id: cloud_bin_2
+feature_method: 3DSIFT
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.34355828220858897

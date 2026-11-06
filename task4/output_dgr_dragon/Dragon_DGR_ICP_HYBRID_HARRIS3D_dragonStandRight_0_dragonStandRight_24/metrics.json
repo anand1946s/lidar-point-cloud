@@ -1,0 +1,13 @@
+{
+  "fitness": 0.9375,
+  "rmse": 0.028388919331379485,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "Dragon",
+  "source_id": "dragonStandRight_0",
+  "target_id": "dragonStandRight_24",
+  "feature_method": "HARRIS3D",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.9375
+}

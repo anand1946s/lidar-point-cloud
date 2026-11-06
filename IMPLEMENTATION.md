@@ -13,6 +13,74 @@ The same conceptual pipeline is reused everywhere, but each task overrides I/O f
 
 ---
 
+## 0) New-user setup
+
+Run the setup commands from the repository root. Using a virtual environment
+keeps this project's pinned Python packages separate from the system Python:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Download the model required by the DGR registration methods:
+
+```bash
+python scripts/download_models.py
+```
+
+The script is safe to run more than once. It skips an existing checkpoint and
+downloads the DGR 3DMatch model to:
+
+```text
+source_codes/DeepGlobalRegistration/ResUNetBN2C-feat32-3dmatch-v0.05.pth
+```
+
+This is the same path used by `task4/config.py` and the DGR loader. The
+GeoTransformer checkpoint is already kept in
+`source_codes/GeoTransformer/weights/geotransformer-3dmatch.pth.tar`, and the
+R-PointHop checkpoint is already kept in
+`source_codes/R-PointHop/model/R-PointHop.pkl`; neither is downloaded by the
+setup script.
+
+Before running an experiment, select one dataset block in the task's
+`config.py`, set `SOURCE_NAME` and `TARGET_NAME` (or `PAIRS` for a batch), and
+choose `FEATURE_METHOD` and `REGISTRATION_METHOD`. For example:
+
+```bash
+python task4/main.py
+```
+
+Use the task-specific `main.py`, `batch.py`, or `run_combinations.py` for the
+workflow you want. Dataset files are resolved from the paths configured in
+`config.py`; update those paths when using data stored outside this checkout.
+
+---
+
+## 0.1) Repository layout
+
+```text
+task1/                  Shared/canonical algorithms and Stanford scan pipeline
+task2/                  ScanNet pipeline and task-specific configuration
+task3/                  PAVIN LiDAR pipeline and task-specific configuration
+task4/                  3DMatch pipeline, learned registration dispatch, outputs
+source_codes/            Vendored third-party code, native tools, and checkpoints
+scripts/                Setup and utility scripts, including model downloads
+requirements.txt        Pinned Python dependencies
+IMPLEMENTATION.md       Detailed architecture and extension notes
+README.md               Short user-facing command reference
+```
+
+The task directories are executable entry points. `task1` contains much of the
+shared registration and preprocessing code; tasks 2–4 reuse it where
+appropriate while overriding dataset loading, configuration, and output
+handling. `source_codes` contains external implementations such as
+DeepGlobalRegistration, GeoTransformer, MinkowskiEngine, and R-PointHop.
+
+---
+
 ## 1) Pipeline mental model (high-level)
 
 Every run does:

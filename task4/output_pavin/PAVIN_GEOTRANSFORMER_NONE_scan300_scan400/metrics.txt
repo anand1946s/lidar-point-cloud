@@ -1,0 +1,11 @@
+fitness: 0.13820414894540403
+rmse: 0.11157761454372979
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: PAVIN
+source_id: scan300
+target_id: scan400
+feature_method: NONE
+registration_method: GEOTRANSFORMER
+before_registration_fitness: 0.1794983074385904

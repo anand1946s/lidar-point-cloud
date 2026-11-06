@@ -1,0 +1,11 @@
+fitness: 0.6123562658351198
+rmse: 0.022153680780730215
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: 3DMatch
+source_id: cloud_bin_1
+target_id: cloud_bin_2
+feature_method: NONE
+registration_method: RPOINTHOP_ICP_HYBRID
+before_registration_fitness: 0.13740011693626974

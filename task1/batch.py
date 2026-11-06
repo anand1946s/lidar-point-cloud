@@ -7,10 +7,10 @@ import time
 
 
 PAIRS = [
-    ("happySideRight_0", "happySideRight_24"),
-    ("happySideRight_24", "happySideRight_48"),
-    ("happySideRight_48", "happySideRight_72"),
-    ("happySideRight_72", "happySideRight_96"),
+    ("dragonStandRight_0", "dragonStandRight_24"),
+    ("dragonStandRight_24", "dragonStandRight_48"),
+    ("dragonStandRight_48", "dragonStandRight_72"),
+    ("dragonStandRight_72", "dragonStandRight_96"),
     ]
 
 CONFIG_PATH = Path("task1/config.py")
@@ -50,7 +50,7 @@ for source_name, target_name in PAIRS:
         capture_output=True,
         text=True
     )
-   
+
 
     output = result.stdout.strip()
 

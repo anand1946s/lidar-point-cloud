@@ -1,0 +1,11 @@
+fitness: 0.69826224328594
+rmse: 0.022642245448912985
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: 3DMatch
+source_id: cloud_bin_2
+target_id: cloud_bin_3
+feature_method: NONE
+registration_method: GEOTRANSFORMER
+before_registration_fitness: 0.0924170616113744

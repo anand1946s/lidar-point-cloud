@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import sys
+import argparse
+import copy
 import os
 import re
-import copy
-import argparse
+import sys
 from pathlib import Path
+
 import numpy as np
 
 # Force X11/XWayland backend on Linux to avoid Wayland window placement & GLEW errors in Open3D/GLFW
@@ -28,8 +29,8 @@ DATASETS = {
         "display_name": "Stanford Bunny",
     },
     "dragon": {
-        "output_dir": SCRIPT_DIR / "outputs_dragon",
-        "data_dir": SCRIPT_DIR / "dragon_side",
+        "output_dir": SCRIPT_DIR / "outputs_dragon_stand",
+        "data_dir": SCRIPT_DIR / "dragon_stand",
         "display_name": "Stanford Dragon",
     },
     "buddha": {
@@ -135,10 +136,7 @@ def resolve_run_or_dataset(query, current_dataset="bunny"):
             ):
                 runs = get_runs_for_dataset(dkey)
                 for r in runs:
-                    if (
-                        r["run_dir"] == path_check
-                        or r["run_name"] == path_check.name
-                    ):
+                    if r["run_dir"] == path_check or r["run_name"] == path_check.name:
                         return dkey, r, []
 
     # Resolve within current_dataset
@@ -151,15 +149,11 @@ def resolve_run_or_dataset(query, current_dataset="bunny"):
             return current_dataset, runs[idx], []
 
     # Search by exact name or substring
-    exact_matches = [
-        r for r in runs if r["run_name"].lower() == query_lower
-    ]
+    exact_matches = [r for r in runs if r["run_name"].lower() == query_lower]
     if len(exact_matches) == 1:
         return current_dataset, exact_matches[0], []
 
-    substr_matches = [
-        r for r in runs if query_lower in r["run_name"].lower()
-    ]
+    substr_matches = [r for r in runs if query_lower in r["run_name"].lower()]
     if len(substr_matches) == 1:
         return current_dataset, substr_matches[0], []
     elif len(substr_matches) > 1:
@@ -206,7 +200,7 @@ class RegistrationViewerState:
             color_src = np.array([0.85, 0.1, 0.65])  # Vibrant Magenta
             color_tgt = np.array([0.0, 0.55, 0.85])  # Deep Cyan/Blue
         else:  # height / amber_blue
-            color_src = np.array([0.9, 0.45, 0.0])   # Amber / Orange
+            color_src = np.array([0.9, 0.45, 0.0])  # Amber / Orange
             color_tgt = np.array([0.15, 0.35, 0.9])  # Royal Blue
 
         if self.source_pcd is not None and self.mode in [1, 2]:
@@ -236,7 +230,9 @@ class RegistrationViewerState:
 
     def set_mode(self, mode):
         self.mode = mode
-        mode_str = {1: "BOTH (Source + Target)", 2: "SOURCE ONLY", 3: "TARGET ONLY"}[mode]
+        mode_str = {1: "BOTH (Source + Target)", 2: "SOURCE ONLY", 3: "TARGET ONLY"}[
+            mode
+        ]
         print(f"\n\033[92m[Viewer State] Display Mode: {mode_str}\033[0m")
         self.update_geometries()
 
@@ -244,7 +240,9 @@ class RegistrationViewerState:
         schemes = ["red_green", "cyan_magenta", "height"]
         idx = schemes.index(self.color_scheme)
         self.color_scheme = schemes[(idx + 1) % len(schemes)]
-        print(f"\n\033[92m[Viewer State] Color Palette: {self.color_scheme.upper()}\033[0m")
+        print(
+            f"\n\033[92m[Viewer State] Color Palette: {self.color_scheme.upper()}\033[0m"
+        )
         self.update_geometries()
 
 
@@ -253,7 +251,9 @@ def print_help_menu():
     print("  \033[93m[1]\033[0m : Display BOTH Registered Source & Target Point Clouds")
     print("  \033[93m[2]\033[0m : Display SOURCE Point Cloud Only")
     print("  \033[93m[3]\033[0m : Display TARGET Point Cloud Only")
-    print("  \033[93m[C]\033[0m : Cycle Color Palette (Red/Green -> Cyan/Magenta -> Amber/Blue)")
+    print(
+        "  \033[93m[C]\033[0m : Cycle Color Palette (Red/Green -> Cyan/Magenta -> Amber/Blue)"
+    )
     print("  \033[93m[P]\033[0m : Print Point Cloud Statistics & Evaluation Metrics")
     print("  \033[93m[H]\033[0m : Show Help Menu")
     print("  \033[93m[Q] / [Esc]\033[0m : Close Visualizer Window")
@@ -264,10 +264,16 @@ def print_run_details(run_info, src_pts_count, tgt_pts_count):
     print("\n" + "\033[1;36m=" * 60 + "\033[0m")
     print(f"\033[1;95m  Task 1 Registration Output Viewer\033[0m")
     print("\033[1;36m=" * 60 + "\033[0m")
-    print(f"  \033[94mDataset:\033[0m           {DATASETS[run_info['dataset']]['display_name']} ({run_info['dataset']})")
+    print(
+        f"  \033[94mDataset:\033[0m           {DATASETS[run_info['dataset']]['display_name']} ({run_info['dataset']})"
+    )
     print(f"  \033[94mRun Folder:\033[0m        {run_info['run_name']}")
-    print(f"  \033[94mSource Scan:\033[0m       {run_info['source_name'] or 'Unknown'} ({src_pts_count:,} pts)")
-    print(f"  \033[94mTarget Scan:\033[0m       {run_info['target_name'] or 'Unknown'} ({tgt_pts_count:,} pts)")
+    print(
+        f"  \033[94mSource Scan:\033[0m       {run_info['source_name'] or 'Unknown'} ({src_pts_count:,} pts)"
+    )
+    print(
+        f"  \033[94mTarget Scan:\033[0m       {run_info['target_name'] or 'Unknown'} ({tgt_pts_count:,} pts)"
+    )
 
     metrics = run_info["metrics"]
     if metrics:
@@ -278,9 +284,13 @@ def print_run_details(run_info, src_pts_count, tgt_pts_count):
         if "rmse" in metrics:
             print(f"    - Inlier RMSE:        \033[92m{metrics['rmse']:.6f}\033[0m")
         if "rotation_error_deg" in metrics:
-            print(f"    - Rotation Error:     \033[92m{metrics['rotation_error_deg']:.4f}°\033[0m")
+            print(
+                f"    - Rotation Error:     \033[92m{metrics['rotation_error_deg']:.4f}°\033[0m"
+            )
         if "translation_error" in metrics:
-            print(f"    - Translation Error:  \033[92m{metrics['translation_error']:.6f}\033[0m")
+            print(
+                f"    - Translation Error:  \033[92m{metrics['translation_error']:.6f}\033[0m"
+            )
     print("\033[1;36m=" * 60 + "\033[0m\n")
 
 
@@ -295,14 +305,18 @@ def visualize_run(run_info):
         try:
             source_pcd = o3d.io.read_point_cloud(str(run_info["ply_path"]))
         except Exception as e:
-            print(f"\033[91mFailed to load aligned PLY ({run_info['ply_path'].name}): {e}\033[0m")
+            print(
+                f"\033[91mFailed to load aligned PLY ({run_info['ply_path'].name}): {e}\033[0m"
+            )
 
     # If aligned PLY is missing or empty, fall back to raw source scan
     if source_pcd is None or len(source_pcd.points) == 0:
         if run_info["source_name"]:
             raw_src_file = data_dir / f"{run_info['source_name']}.ply"
             if raw_src_file.exists():
-                print(f"\033[93mNote: Using raw unaligned source point cloud from {raw_src_file.name}\033[0m")
+                print(
+                    f"\033[93mNote: Using raw unaligned source point cloud from {raw_src_file.name}\033[0m"
+                )
                 source_pcd = o3d.io.read_point_cloud(str(raw_src_file))
 
     # 2. Load Target PLY
@@ -313,13 +327,17 @@ def visualize_run(run_info):
             try:
                 target_pcd = o3d.io.read_point_cloud(str(target_file))
             except Exception as e:
-                print(f"\033[91mFailed to load target PLY ({target_file.name}): {e}\033[0m")
+                print(
+                    f"\033[91mFailed to load target PLY ({target_file.name}): {e}\033[0m"
+                )
 
     src_count = len(source_pcd.points) if source_pcd else 0
     tgt_count = len(target_pcd.points) if target_pcd else 0
 
     if src_count == 0 and tgt_count == 0:
-        print(f"\033[91mError: No valid point cloud data found for run '{run_info['run_name']}'.\033[0m")
+        print(
+            f"\033[91mError: No valid point cloud data found for run '{run_info['run_name']}'.\033[0m"
+        )
         return
 
     # Print summary & metrics
@@ -414,7 +432,9 @@ def display_interactive_menu(current_dataset="bunny"):
         cfg = DATASETS[dataset]
 
         print("\n" + "\033[1;95m" + "=" * 70 + "\033[0m")
-        print(f"\033[1;95m=== Task 1 Registration Output Viewer [{cfg['display_name']}] ===\033[0m")
+        print(
+            f"\033[1;95m=== Task 1 Registration Output Viewer [{cfg['display_name']}] ===\033[0m"
+        )
         print("\033[1;95m" + "=" * 70 + "\033[0m")
         print("Options:")
         print("  \033[93m[B]\033[0m Switch to Bunny dataset")
@@ -422,7 +442,9 @@ def display_interactive_menu(current_dataset="bunny"):
         print("  \033[93m[H]\033[0m Switch to Buddha dataset")
         print("  \033[93m[Q]\033[0m Quit")
         print("-" * 70)
-        print(f"Total available runs in \033[94m{cfg['output_dir'].name}\033[0m: \033[92m{len(runs)}\033[0m\n")
+        print(
+            f"Total available runs in \033[94m{cfg['output_dir'].name}\033[0m: \033[92m{len(runs)}\033[0m\n"
+        )
 
         print("  Index  | Fitness   | RMSE      | Run Name")
         print("  " + "-" * 65)
@@ -433,16 +455,16 @@ def display_interactive_menu(current_dataset="bunny"):
                 else " N/A  "
             )
             rmse_str = (
-                f"{r['metrics']['rmse']:.4f}"
-                if "rmse" in r["metrics"]
-                else " N/A  "
+                f"{r['metrics']['rmse']:.4f}" if "rmse" in r["metrics"] else " N/A  "
             )
             status_flag = "" if r["ply_path"] else " \033[91m[NO PLY]\033[0m"
             print(
                 f"  \033[94m[{idx:3d}]\033[0m  | {fitness_str}   | {rmse_str}   | {r['run_name']}{status_flag}"
             )
 
-        print("\nEnter run index (e.g. 0), search query (e.g. 'ROBUST', 'FGR', '0_24'), dataset switch ('b'/'d'/'h'), or 'q' to quit:")
+        print(
+            "\nEnter run index (e.g. 0), search query (e.g. 'ROBUST', 'FGR', '0_24'), dataset switch ('b'/'d'/'h'), or 'q' to quit:"
+        )
         try:
             choice = input("\033[96mSelect Run > \033[0m").strip()
         except (KeyboardInterrupt, EOFError):
@@ -473,11 +495,19 @@ def display_interactive_menu(current_dataset="bunny"):
         elif matches:
             print(f"\n\033[93mMultiple matches found ({len(matches)}):\033[0m")
             for idx, m in enumerate(matches):
-                f_str = f"{m['metrics'].get('fitness', 0.0):.4f}" if "fitness" in m["metrics"] else "N/A"
-                print(f"  \033[94m[{idx:3d}]\033[0m ({m['dataset'].upper()}) Fitness: {f_str} | {m['run_name']}")
+                f_str = (
+                    f"{m['metrics'].get('fitness', 0.0):.4f}"
+                    if "fitness" in m["metrics"]
+                    else "N/A"
+                )
+                print(
+                    f"  \033[94m[{idx:3d}]\033[0m ({m['dataset'].upper()}) Fitness: {f_str} | {m['run_name']}"
+                )
             print("\nPlease select a run by exact index or full name.")
         else:
-            print(f"\033[91mNo run matching '{choice}' was found in dataset '{dataset}'.\033[0m")
+            print(
+                f"\033[91mNo run matching '{choice}' was found in dataset '{dataset}'.\033[0m"
+            )
 
 
 def main():
@@ -516,7 +546,9 @@ def main():
             active_dataset = q_lower
             if args.list:
                 runs = get_runs_for_dataset(active_dataset)
-                print(f"\n\033[1;95m=== {DATASETS[active_dataset]['display_name']} Runs ({len(runs)}) ===\033[0m")
+                print(
+                    f"\n\033[1;95m=== {DATASETS[active_dataset]['display_name']} Runs ({len(runs)}) ===\033[0m"
+                )
                 for idx, r in enumerate(runs):
                     print(f"  [{idx:3d}] {r['run_name']}")
                 sys.exit(0)
@@ -535,12 +567,16 @@ def main():
                 print(f"  [{idx:2d}] ({m['dataset']}) {m['run_name']}")
             sys.exit(1)
         else:
-            print(f"\033[91mCould not find any output run matching query '{args.query}'.\033[0m")
+            print(
+                f"\033[91mCould not find any output run matching query '{args.query}'.\033[0m"
+            )
             sys.exit(1)
 
     if args.list:
         runs = get_runs_for_dataset(active_dataset)
-        print(f"\n\033[1;95m=== {DATASETS[active_dataset]['display_name']} Runs ({len(runs)}) ===\033[0m")
+        print(
+            f"\n\033[1;95m=== {DATASETS[active_dataset]['display_name']} Runs ({len(runs)}) ===\033[0m"
+        )
         for idx, r in enumerate(runs):
             print(f"  [{idx:3d}] {r['run_name']}")
         sys.exit(0)

@@ -1,0 +1,11 @@
+fitness: 0.04798715732279575
+rmse: 0.09937570242603043
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: PAVIN
+source_id: scan600
+target_id: scan700
+feature_method: HARRIS3D
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.04798715732279575

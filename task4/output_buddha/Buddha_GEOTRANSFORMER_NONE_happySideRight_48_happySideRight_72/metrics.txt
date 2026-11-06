@@ -1,0 +1,11 @@
+fitness: 0.504950495049505
+rmse: 0.011489610500747791
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: Buddha
+source_id: happySideRight_48
+target_id: happySideRight_72
+feature_method: NONE
+registration_method: GEOTRANSFORMER
+before_registration_fitness: 0.8189533239038189

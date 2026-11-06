@@ -1,0 +1,13 @@
+{
+  "fitness": 0.03736431326814389,
+  "rmse": 0.10467008794527195,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "PAVIN",
+  "source_id": "scan400",
+  "target_id": "scan500",
+  "feature_method": "NONE",
+  "registration_method": "RPOINTHOP_ICP_HYBRID",
+  "before_registration_fitness": 0.15403247510540952
+}

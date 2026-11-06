@@ -1,0 +1,13 @@
+{
+  "fitness": 0.39398631212835183,
+  "rmse": 0.0916157490638221,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "PAVIN",
+  "source_id": "scan500",
+  "target_id": "scan600",
+  "feature_method": "NONE",
+  "registration_method": "GEOTRANSFORMER",
+  "before_registration_fitness": 0.29092337035790417
+}

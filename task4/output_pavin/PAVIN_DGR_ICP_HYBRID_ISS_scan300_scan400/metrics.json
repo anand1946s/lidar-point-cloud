@@ -1,0 +1,13 @@
+{
+  "fitness": 0.1553250585886642,
+  "rmse": 0.10034787868178438,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "PAVIN",
+  "source_id": "scan300",
+  "target_id": "scan400",
+  "feature_method": "ISS",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.14618956687787518
+}

@@ -1,0 +1,13 @@
+{
+  "fitness": 0.7874423963133641,
+  "rmse": 0.022260458906386164,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "3DMatch",
+  "source_id": "cloud_bin_0",
+  "target_id": "cloud_bin_1",
+  "feature_method": "NONE",
+  "registration_method": "RPOINTHOP_ICP_HYBRID",
+  "before_registration_fitness": 0.22446236559139784
+}

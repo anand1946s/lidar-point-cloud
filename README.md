@@ -50,7 +50,7 @@ python taskX/main.py
 
 - `SOURCE_NAME`, `TARGET_NAME`: scan pair
 - `FEATURE_METHOD`: `NONE`, `ISS`, `3DSIFT`, `HARRIS3D`, `FPFH`, `SHOT` (Task 4 also supports `MULTI_SCALE`)
-- `REGISTRATION_METHOD`: `ICP`, `ROBUST_ICP`, `FGR`, `GO_ICP`
+- `REGISTRATION_METHOD`: `ICP`, `ROBUST_ICP`, `FGR`, `GO_ICP`, `GEOTRANSFORMER`, `GEOTRANSFORMER_ICP_HYBRID` (Task 4 also supports `DGR_ICP_HYBRID`, `RPOINTHOP_ICP_HYBRID`)
 - `VOXEL_SIZE` (Tasks 2/3/4), thresholds, and Go-ICP parameters
 - `VISUALIZE`, `SAVE_RESULTS`
 

@@ -1,0 +1,5 @@
+fitness: 0.7582211086752271
+rmse: 0.02559319424698128
+rotation_error_deg: 0.0
+translation_error: 0.0
+before_registration_fitness: 0.7491387409959286

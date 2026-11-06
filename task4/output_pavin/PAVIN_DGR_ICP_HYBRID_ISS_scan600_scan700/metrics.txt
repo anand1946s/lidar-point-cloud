@@ -1,0 +1,11 @@
+fitness: 0.2802914299827118
+rmse: 0.08925548830130764
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: PAVIN
+source_id: scan600
+target_id: scan700
+feature_method: ISS
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.2802914299827118

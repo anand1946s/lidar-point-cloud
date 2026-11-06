@@ -1,0 +1,11 @@
+fitness: 0.9
+rmse: 0.030894471091006428
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: Bunny
+source_id: bun000
+target_id: bun315
+feature_method: NONE
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.9

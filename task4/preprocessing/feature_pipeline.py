@@ -2,9 +2,14 @@ import numpy as np
 import open3d as o3d
 import copy
 
-from config import VOXEL_SIZE, REGISTRATION_METHOD, RANSAC_THRESHOLD
+from config import (
+    VOXEL_SIZE,
+    RANSAC_THRESHOLD,
+    FEATURE_RANSAC_MAX_ITERATIONS,
+    FEATURE_RANSAC_MAX_VALIDATIONS,
+)
 
-from task1.preprocessing.fpfh import compute_fpfh, get_initial_transform
+from task1.preprocessing.fpfh import compute_fpfh
 from task1.preprocessing.iss import extract_iss_keypoints
 from task1.preprocessing.harris3d import extract_harris3d, get_harris3d_initial_transform
 from task1.preprocessing.sift3d import extract_sift3d, get_sift3d_initial_transform
@@ -29,12 +34,41 @@ def compute_indexed_fpfh(dense_cloud, keypoints, voxel_size):
     return indexed_fpfh
 
 
+def get_feature_initial_transform(source, target, source_features, target_features, distance):
+    """Bounded RANSAC used for a feature seed in Task 4 experiments."""
+    return o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
+        source, target, source_features, target_features, True, distance,
+        o3d.pipelines.registration.TransformationEstimationPointToPoint(False), 3,
+        [
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance),
+        ],
+        o3d.pipelines.registration.RANSACConvergenceCriteria(
+            FEATURE_RANSAC_MAX_ITERATIONS, FEATURE_RANSAC_MAX_VALIDATIONS,
+        ),
+    )
+
+
 def prepare_registration_inputs(
     feature_method,
     registration_method,
     source,
-    target
+    target,
+    voxel_size=VOXEL_SIZE,
+    ransac_threshold=RANSAC_THRESHOLD,
+    multi_scale_coarse_voxel=None,
+    multi_scale_medium_voxel=None,
+    multi_scale_coarse_threshold=None,
+    multi_scale_medium_threshold=None,
 ):
+    """Prepare the actual registration input selected by ``feature_method``.
+
+    ``registration_source``/``registration_target`` are the clouds supplied
+    to coarse registration.  ``initial_transform`` is a feature-derived seed
+    and is intentionally returned so callers can compose it into methods such
+    as DGR that do not accept descriptors directly.
+    """
+    feature_method = str(feature_method).upper()
     pipeline_data = {
         "registration_source": source,
         "registration_target": target,
@@ -57,17 +91,21 @@ def prepare_registration_inputs(
     # NONE
     # -------------------
     elif feature_method == "NONE":
-        pass
+        # For NONE (whole set), use full clouds as-is for DGR
+        if registration_method == "FGR":
+            source_fpfh = compute_fpfh(source, voxel_size=VOXEL_SIZE)
+            target_fpfh = compute_fpfh(target, voxel_size=VOXEL_SIZE)
+            pipeline_data["source_fpfh"] = source_fpfh
+            pipeline_data["target_fpfh"] = target_fpfh
 
     # -------------------
     # MULTI_SCALE / COARSE_TO_FINE (Highly optimized for 3DMatch)
     # -------------------
     elif feature_method in {"MULTI_SCALE", "COARSE_TO_FINE", "C2F"}:
-        coarse_vs = 0.15   # 15cm coarse voxel downsampling
-        medium_vs = 0.05   # 5cm medium voxel downsampling
-        
-        coarse_th = 0.30   # 30cm RANSAC distance threshold
-        medium_th = 0.10   # 10cm ICP distance threshold
+        coarse_vs = multi_scale_coarse_voxel or voxel_size * 3.0
+        medium_vs = multi_scale_medium_voxel or voxel_size
+        coarse_th = multi_scale_coarse_threshold or ransac_threshold * 2.0
+        medium_th = multi_scale_medium_threshold or ransac_threshold
         
         # 1. Coarse scale registration
         s_coarse = source.voxel_down_sample(coarse_vs)
@@ -91,7 +129,9 @@ def prepare_registration_inputs(
                 o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),
                 o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(coarse_th)
             ],
-            o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.999)
+            o3d.pipelines.registration.RANSACConvergenceCriteria(
+                FEATURE_RANSAC_MAX_ITERATIONS, FEATURE_RANSAC_MAX_VALIDATIONS,
+            )
         )
         current_transform = res_ransac.transformation
         
@@ -108,21 +148,21 @@ def prepare_registration_inputs(
         pipeline_data["initial_transform"] = current_transform
         
         if registration_method == "FGR":
-            pipeline_data["source_fpfh"] = compute_fpfh(source, voxel_size=VOXEL_SIZE)
-            pipeline_data["target_fpfh"] = compute_fpfh(target, voxel_size=VOXEL_SIZE)
+            pipeline_data["source_fpfh"] = compute_fpfh(source, voxel_size=voxel_size)
+            pipeline_data["target_fpfh"] = compute_fpfh(target, voxel_size=voxel_size)
 
     # -------------------
     # FPFH
     # -------------------
     elif feature_method == "FPFH":
-        source_fpfh = compute_fpfh(source, voxel_size=VOXEL_SIZE)
-        target_fpfh = compute_fpfh(target, voxel_size=VOXEL_SIZE)
-        initial_result = get_initial_transform(
+        source_fpfh = compute_fpfh(source, voxel_size=voxel_size)
+        target_fpfh = compute_fpfh(target, voxel_size=voxel_size)
+        initial_result = get_feature_initial_transform(
             source,
             target,
             source_fpfh,
             target_fpfh,
-            voxel_size=RANSAC_THRESHOLD / 1.5
+            distance=ransac_threshold
         )
         pipeline_data["source_fpfh"] = source_fpfh
         pipeline_data["target_fpfh"] = target_fpfh
@@ -135,23 +175,22 @@ def prepare_registration_inputs(
         source_iss = extract_iss_keypoints(source)
         target_iss = extract_iss_keypoints(target)
 
-        source_fpfh = compute_indexed_fpfh(source, source_iss, voxel_size=VOXEL_SIZE)
-        target_fpfh = compute_indexed_fpfh(target, target_iss, voxel_size=VOXEL_SIZE)
+        source_fpfh = compute_indexed_fpfh(source, source_iss, voxel_size=voxel_size)
+        target_fpfh = compute_indexed_fpfh(target, target_iss, voxel_size=voxel_size)
 
-        initial_result = get_initial_transform(
+        initial_result = get_feature_initial_transform(
             source_iss,
             target_iss,
             source_fpfh,
             target_fpfh,
-            voxel_size=RANSAC_THRESHOLD / 1.5
+            distance=ransac_threshold
         )
 
         pipeline_data["initial_transform"] = initial_result.transformation
-        if registration_method == "FGR":
-            pipeline_data["registration_source"] = source_iss
-            pipeline_data["registration_target"] = target_iss
-            pipeline_data["source_fpfh"] = source_fpfh
-            pipeline_data["target_fpfh"] = target_fpfh
+        pipeline_data["registration_source"] = source_iss
+        pipeline_data["registration_target"] = target_iss
+        pipeline_data["source_fpfh"] = source_fpfh
+        pipeline_data["target_fpfh"] = target_fpfh
 
     # -------------------
     # HARRIS3D
@@ -168,23 +207,22 @@ def prepare_registration_inputs(
         source_harris = source_harris_scaled.scale(scale_factor, center=(0, 0, 0))
         target_harris = target_harris_scaled.scale(scale_factor, center=(0, 0, 0))
 
-        source_fpfh = compute_indexed_fpfh(source, source_harris, voxel_size=VOXEL_SIZE)
-        target_fpfh = compute_indexed_fpfh(target, target_harris, voxel_size=VOXEL_SIZE)
+        source_fpfh = compute_indexed_fpfh(source, source_harris, voxel_size=voxel_size)
+        target_fpfh = compute_indexed_fpfh(target, target_harris, voxel_size=voxel_size)
 
-        initial_result = get_initial_transform(
+        initial_result = get_feature_initial_transform(
             source_harris,
             target_harris,
             source_fpfh,
             target_fpfh,
-            voxel_size=RANSAC_THRESHOLD / 1.5
+            distance=ransac_threshold
         )
         pipeline_data["initial_transform"] = initial_result.transformation
 
-        if registration_method == "FGR":
-            pipeline_data["registration_source"] = source_harris
-            pipeline_data["registration_target"] = target_harris
-            pipeline_data["source_fpfh"] = source_fpfh
-            pipeline_data["target_fpfh"] = target_fpfh
+        pipeline_data["registration_source"] = source_harris
+        pipeline_data["registration_target"] = target_harris
+        pipeline_data["source_fpfh"] = source_fpfh
+        pipeline_data["target_fpfh"] = target_fpfh
 
     # -------------------
     # SIFT3D
@@ -193,23 +231,22 @@ def prepare_registration_inputs(
         source_sift = extract_sift3d(source)
         target_sift = extract_sift3d(target)
 
-        source_fpfh = compute_indexed_fpfh(source, source_sift, voxel_size=VOXEL_SIZE)
-        target_fpfh = compute_indexed_fpfh(target, target_sift, voxel_size=VOXEL_SIZE)
+        source_fpfh = compute_indexed_fpfh(source, source_sift, voxel_size=voxel_size)
+        target_fpfh = compute_indexed_fpfh(target, target_sift, voxel_size=voxel_size)
 
-        initial_result = get_initial_transform(
+        initial_result = get_feature_initial_transform(
             source_sift,
             target_sift,
             source_fpfh,
             target_fpfh,
-            voxel_size=RANSAC_THRESHOLD / 1.5
+            distance=ransac_threshold
         )
         pipeline_data["initial_transform"] = initial_result.transformation
 
-        if registration_method == "FGR":
-            pipeline_data["registration_source"] = source_sift
-            pipeline_data["registration_target"] = target_sift
-            pipeline_data["source_fpfh"] = source_fpfh
-            pipeline_data["target_fpfh"] = target_fpfh
+        pipeline_data["registration_source"] = source_sift
+        pipeline_data["registration_target"] = target_sift
+        pipeline_data["source_fpfh"] = source_fpfh
+        pipeline_data["target_fpfh"] = target_fpfh
 
     # -------------------
     # SHOT
@@ -234,20 +271,40 @@ def prepare_registration_inputs(
         source_shot_clean = source_shot_clean_scaled.scale(scale_factor, center=(0, 0, 0))
         target_shot_clean = target_shot_clean_scaled.scale(scale_factor, center=(0, 0, 0))
 
-        initial_result = get_initial_transform(
+        initial_result = get_feature_initial_transform(
             source_shot_clean,
             target_shot_clean,
             source_shot_features,
             target_shot_features,
-            voxel_size=RANSAC_THRESHOLD / 1.5
+            distance=ransac_threshold
         )
 
         pipeline_data["initial_transform"] = initial_result.transformation
-        if registration_method == "FGR":
-            pipeline_data["registration_source"] = source_shot_clean
-            pipeline_data["registration_target"] = target_shot_clean
-            pipeline_data["source_fpfh"] = source_shot_features
-            pipeline_data["target_fpfh"] = target_shot_features
+        pipeline_data["registration_source"] = source_shot_clean
+        pipeline_data["registration_target"] = target_shot_clean
+        pipeline_data["source_fpfh"] = source_shot_features
+        pipeline_data["target_fpfh"] = target_shot_features
+
+    # -------------------
+    # R-POINTHOP
+    # -------------------
+    elif feature_method in {"RPOINTHOP", "R_POINT_HOP", "R_POINTHOP"}:
+        from rpointhop_helper import extract_rpointhop_features
+        src_kps, tgt_kps, src_feat, tgt_feat = extract_rpointhop_features(
+            source, target
+        )
+        initial_result = get_feature_initial_transform(
+            src_kps,
+            tgt_kps,
+            src_feat,
+            tgt_feat,
+            distance=ransac_threshold,
+        )
+        pipeline_data["initial_transform"] = initial_result.transformation
+        pipeline_data["registration_source"] = src_kps
+        pipeline_data["registration_target"] = tgt_kps
+        pipeline_data["source_fpfh"] = src_feat
+        pipeline_data["target_fpfh"] = tgt_feat
 
     else:
         raise ValueError(f"Unsupported feature method: {feature_method}")

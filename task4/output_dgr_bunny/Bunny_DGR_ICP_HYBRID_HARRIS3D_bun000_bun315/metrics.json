@@ -1,0 +1,13 @@
+{
+  "fitness": 0.9,
+  "rmse": 0.030894471091006428,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "Bunny",
+  "source_id": "bun000",
+  "target_id": "bun315",
+  "feature_method": "HARRIS3D",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.9
+}

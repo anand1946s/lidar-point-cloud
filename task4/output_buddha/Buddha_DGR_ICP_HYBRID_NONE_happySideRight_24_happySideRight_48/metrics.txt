@@ -1,0 +1,11 @@
+fitness: 1.0
+rmse: 0.0036157235707513623
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: Buddha
+source_id: happySideRight_24
+target_id: happySideRight_48
+feature_method: NONE
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.9448621553884712

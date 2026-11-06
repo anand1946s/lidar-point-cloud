@@ -1,0 +1,11 @@
+fitness: 0.98438855160451
+rmse: 0.0036316690750170825
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: Bunny
+source_id: bun000
+target_id: bun045
+feature_method: NONE
+registration_method: RPOINTHOP_ICP_HYBRID
+before_registration_fitness: 0.5385949696444059

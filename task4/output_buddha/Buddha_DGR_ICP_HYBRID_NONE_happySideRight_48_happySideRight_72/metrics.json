@@ -1,0 +1,13 @@
+{
+  "fitness": 0.9108910891089109,
+  "rmse": 0.006281756201045579,
+  "rotation_error_deg": null,
+  "translation_error": null,
+  "ground_truth_available": false,
+  "dataset": "Buddha",
+  "source_id": "happySideRight_48",
+  "target_id": "happySideRight_72",
+  "feature_method": "NONE",
+  "registration_method": "DGR_ICP_HYBRID",
+  "before_registration_fitness": 0.8189533239038189
+}

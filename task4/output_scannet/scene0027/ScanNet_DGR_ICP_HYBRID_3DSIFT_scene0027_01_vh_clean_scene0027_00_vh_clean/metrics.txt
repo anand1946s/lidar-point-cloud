@@ -1,0 +1,11 @@
+fitness: 0.5152938824470212
+rmse: 0.03433083290008438
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: ScanNet
+source_id: scene0027_01_vh_clean
+target_id: scene0027_00_vh_clean
+feature_method: 3DSIFT
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.39704118352658935

@@ -1,111 +1,100 @@
+"""One batch runner for every dataset adapter."""
+import sys
 from pathlib import Path
 import subprocess
-import re
-import sys
+import json
 import time
-import importlib.util
 
-CONFIG_PATH = Path("task4/config.py")
+PROJECT_ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(PROJECT_ROOT))
+from config import (
+    DATASET,
+    DATA_DIR,
+    DATASET_ROOTS,
+    PAIRS,
+    OUTPUT_DIR,
+    BATCH_PAIR_TIMEOUT_SECONDS,
+    FEATURE_METHOD,
+    REGISTRATION_METHOD,
+)
+from datasets import create_dataset
+from main import print_metric_summary
 
-# Dynamically load the current config to check config options
-spec = importlib.util.spec_from_file_location("config", str(CONFIG_PATH))
-config = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(config)
 
-# Pairs of 3DMatch scans to evaluate
-PAIRS = [
-    ("cloud_bin_0", "cloud_bin_1"),
-    ("cloud_bin_1", "cloud_bin_2"),
-    ("cloud_bin_2", "cloud_bin_3"),
-    ("cloud_bin_3", "cloud_bin_4"),
-    ("cloud_bin_4", "cloud_bin_5"),
-]
+def _run_pair_in_worker(dataset, source_id, target_id, output_dir, experiment):
+    """Use process isolation for native DGR/Minkowski/Open3D resources."""
+    feature_method = str(experiment.get("feature_method", FEATURE_METHOD)).upper()
+    registration_method = str(experiment.get("registration_method", REGISTRATION_METHOD)).upper()
+    command = [
+        sys.executable, str(PROJECT_ROOT / "main.py"),
+        "--dataset", dataset.name,
+        "--source", source_id,
+        "--target", target_id,
+        "--output", str(output_dir),
+        "--feature", feature_method,
+        "--registration", registration_method,
+    ]
+    started = time.perf_counter()
+    completed = subprocess.run(
+        command, cwd=PROJECT_ROOT.parent, text=True, capture_output=True,
+        timeout=BATCH_PAIR_TIMEOUT_SECONDS,
+    )
+    run_name = f"{dataset.name}_{registration_method}_{feature_method}_{source_id}_{target_id}"
+    metrics_file = Path(output_dir) / run_name / "metrics.json"
+    if completed.returncode != 0 or not metrics_file.is_file():
+        detail = completed.stderr.strip() or completed.stdout.strip() or f"worker exited with {completed.returncode}"
+        raise RuntimeError(detail)
+    metrics = json.loads(metrics_file.read_text())
+    metrics["execution_time_seconds"] = time.perf_counter() - started
+    return metrics
 
-fitness_vals = []
-rmse_vals = []
-rot_vals = []
-trans_vals = []
 
-start_time = time.time()
+def run_batch(pairs=None, **experiment):
+    dataset_name = experiment.get("dataset_name", DATASET)
+    dataset_root = DATA_DIR if str(dataset_name).upper() == str(DATASET).upper() else DATASET_ROOTS[str(dataset_name).upper()]
+    dataset = create_dataset(dataset_name, dataset_root)
+    if pairs is None:
+        # A config block's PAIRS apply only to its active dataset. Product
+        # sweeps must use the selected adapter's own defaults instead.
+        pairs = PAIRS if str(dataset_name).upper() == str(DATASET).upper() else tuple(dataset.default_pairs())
+    
+    output_dir = experiment.get("output_dir", OUTPUT_DIR)
+    results = []
+    for source_id, target_id in pairs:
+        try:
+            metrics = _run_pair_in_worker(dataset, source_id, target_id, output_dir, experiment)
+            results.append(metrics)
+            print_metric_summary(metrics, label=f"PAIR: {source_id} -> {target_id}")
+        except Exception as error:
+            print(f"FAILED {source_id} -> {target_id}: {error}", file=sys.stderr)
+    if results:
+        numeric = (
+            "fitness", "rmse", "rotation_error_deg", "translation_error",
+            "before_registration_fitness", "execution_time_seconds",
+        )
+        averages = {
+            key: (sum(values) / len(values) if (values := [item[key] for item in results if item.get(key) is not None]) else None)
+            for key in numeric
+        }
+        print("\n" + "=" * 40)
+        print_metric_summary(averages, label=f"AVERAGE (across {len(results)} pairs)")
+        print("=" * 40)
+        return results, averages
+    return [], {}
 
-for source_name, target_name in PAIRS:
-    text = CONFIG_PATH.read_text()
 
-    text = re.sub(
-        r'SOURCE_NAME\s*=\s*".*"',
-        f'SOURCE_NAME = "{source_name}"',
-        text
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Run batch pairwise registration.")
+    parser.add_argument("--dataset", default=DATASET)
+    parser.add_argument("--feature", default=FEATURE_METHOD)
+    parser.add_argument("--registration", default=REGISTRATION_METHOD)
+    parser.add_argument("--output", type=Path, default=OUTPUT_DIR)
+    args = parser.parse_args()
+    run_batch(
+        dataset_name=args.dataset,
+        feature_method=args.feature,
+        registration_method=args.registration,
+        output_dir=args.output,
     )
 
-    text = re.sub(
-        r'TARGET_NAME\s*=\s*".*"',
-        f'TARGET_NAME = "{target_name}"',
-        text
-    )
-
-    CONFIG_PATH.write_text(text)
-
-    print(f"\nRunning: {source_name} -> {target_name}")
-
-    # Set GDK_BACKEND/XDG_SESSION_TYPE for sub-processes on Linux to ensure GUI stability
-    import os
-    env = os.environ.copy()
-    if sys.platform.startswith("linux"):
-        env["GDK_BACKEND"] = "x11"
-        env["XDG_SESSION_TYPE"] = "x11"
-
-    result = subprocess.run(
-        [sys.executable, "task4/main.py"],
-        capture_output=True,
-        text=True,
-        env=env
-    )
-
-    output = result.stdout.strip()
-    print(output)
-
-    try:
-        # Parse lines in reverse to find the metrics output, ignoring trailing print statements
-        for line in reversed(output.strip().split("\n")):
-            try:
-                delimiter = "\t" if "\t" in line else ","
-                fitness, rmse, rot, trans = map(float, line.split(delimiter))
-                fitness_vals.append(fitness)
-                rmse_vals.append(rmse)
-                rot_vals.append(rot)
-                trans_vals.append(trans)
-                break
-            except ValueError:
-                continue
-        else:
-            raise ValueError("Metrics line not found in output.")
-
-    except Exception:
-        print("Could not parse output:")
-        print("--- STDOUT ---")
-        print(output)
-        print("--- STDERR ---")
-        print(result.stderr.strip())
-        print("--------------")
-
-# -------------------------
-# Average
-# -------------------------
-if fitness_vals:
-    avg_fitness = sum(fitness_vals) / len(fitness_vals)
-    avg_rmse = sum(rmse_vals) / len(rmse_vals)
-    avg_rot = sum(rot_vals) / len(rot_vals)
-    avg_trans = sum(trans_vals) / len(trans_vals)
-
-    print("\nAVERAGE")
-    print(
-        f"{avg_fitness:.6f}\t"
-        f"{avg_rmse:.6f}\t"
-        f"{avg_rot:.6f}\t"
-        f"{avg_trans:.6f}"
-    )
-else:
-    print("\nNo successful registrations to compute average.")
-
-end_time = time.time()
-print(f"\nTotal execution time: {end_time - start_time:.2f} seconds")

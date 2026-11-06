@@ -3,20 +3,20 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-DATA_DIR = PROJECT_ROOT / "buddha" / "happy_side"
+DATA_DIR = PROJECT_ROOT / "dragon_stand"
 OUTPUT_DIR = PROJECT_ROOT / "outputs_buddha"
 
-SOURCE_NAME = "happySideRight_0"
-TARGET_NAME = "happySideRight_24"
-CONF_NAME = "happySideRight.conf"
+SOURCE_NAME = "dragonStandRight_72"
+TARGET_NAME = "dragonStandRight_96"
+CONF_NAME = "dragonStandRight.conf"
 
 
 
 # Options: "NONE" (Whole Set), "ISS", "3DSIFT", "HARRIS3D", "FPFH", "SHOT"
-FEATURE_METHOD = "NONE"
- 
-# Options: "ICP", "ROBUST_ICP", "FGR", "GO_ICP"
-REGISTRATION_METHOD = "GO_ICP"
+FEATURE_METHOD = "ISS"
+
+# Options: "ICP", "ROBUST_ICP", "FGR", "GO_ICP", "GEOTRANSFORMER"
+REGISTRATION_METHOD = "ROBUST_ICP"
 
 VISUALIZE = False
 SAVE_RESULTS = True

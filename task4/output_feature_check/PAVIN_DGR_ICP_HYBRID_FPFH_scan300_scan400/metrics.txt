@@ -1,0 +1,11 @@
+fitness: 0.04888
+rmse: 0.032642923742167325
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: PAVIN
+source_id: scan300
+target_id: scan400
+feature_method: FPFH
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.048613333333333335

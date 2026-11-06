@@ -1,0 +1,11 @@
+fitness: 0.9375
+rmse: 0.02838891933137948
+rotation_error_deg: None
+translation_error: None
+ground_truth_available: False
+dataset: Dragon
+source_id: dragonStandRight_0
+target_id: dragonStandRight_24
+feature_method: NONE
+registration_method: DGR_ICP_HYBRID
+before_registration_fitness: 0.9375
